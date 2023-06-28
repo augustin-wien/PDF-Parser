@@ -1,31 +1,37 @@
 """Main function of the FastAPI application."""
-from fastapi import FastAPI
-from pydantic import BaseModel
-
-
-class Item(BaseModel):
-    """Item base model."""
-
-    name: str
-    description: str | None = None
-    price: float
-    tax: float | None = None
-
+from extract_page_3 import extract_page
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
 
 @app.get("/")
-async def root():
-    """Root endpoint."""
-    return {"message": "Hello World"}
+async def main():
+    """HTML form to upload a file."""
+    content = """
+    <body>
+    <form action='/upload' enctype='multipart/form-data' method='post'>
+    <input name='file' type='file'>
+    <input type='submit'>
+    </form>
+    </body>
+    """
+    return HTMLResponse(content=content)
 
 
-@app.post("/items/")
-async def create_item(item: Item):
-    """Create item endpoint."""
-    item_dict = item.dict()
-    if item.tax:
-        price_with_tax = item.price + item.tax
-        item_dict.update({"price_with_tax": price_with_tax})
-    return item_dict
+@app.post("/upload")
+def upload(file: UploadFile = File(...)):
+    """Upload file endpoint."""
+    try:
+        with open(file.filename, "wb") as f:
+            while contents := file.file.read(1024 * 1024):
+                f.write(contents)
+    except Exception:
+        return {"message": "There was an error uploading the file"}
+    finally:
+        file.file.close()
+        # extract page 3 from file
+        response = extract_page(file.filename)
+
+    return {"message": f"Successfully uploaded {file.filename} and post {response}"}
