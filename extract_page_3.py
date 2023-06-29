@@ -19,42 +19,29 @@ global_url = "http://localhost:10004/wp-json/wp/v2/"
 
 def create_post(page, image_id):
     """Create a post with the extracted text and the uploaded image."""
-    # here, text file is in CORRECTLY ORDERED in one big string
-    text = page.get_text("text")
-    # to have a list containing each line I save the whole text
-    with open("page3.txt", "w") as f:
-        f.write(text)
-    # next I open it again
-    with open("page3.txt") as f:
-        lines = f.readlines()
-    # to get all the metadata I focus on the word "PROTOKOLL:"
-    # Sample output of print(lines) looking like this
-    # ['570\n', '3\n', 'augustiner:in\n', 'Bernd Pegritz \n',
-    return_values = []
-    for i, line in enumerate(lines):
-        if "PROTOKOLL:" in line:
-            protocol = lines[i]
-            photograph = lines[i + 1]
-            title = lines[i - 1]
-            author = lines[i - 2]
-            # this is where the article begins
-            return_values.append(i + 2)
+    # First, create rect for article text which is on the bottom third of page
+    r = page.rect
+    r.y0 = (r.y1 * 2) / 3  # two third of page height
+    article = page.get_textbox(r)
 
-        if "■\n" in line:
-            # searching for the ending dot to get the end of the article
-            return_values.append(i)
+    # Second, create rect for article title which is in between half and third bottom of page
+    r2 = page.rect
+    r2.y0 = r2.y1 / 2  # half of page height
+    r2.y1 = r2.y1 * 2 / 3 - 3  # two third of page height -3 so it is not overlapping
+    meta_string = page.get_textbox(r2)
+    meta_array = meta_string.splitlines()
 
-    # this gives me the whole part of the article in single letters
-    article = []
-    for index in range(return_values[0], return_values[1]):
-        article += lines[index]
-
-    # print(article) gives me something like
-    # ['A', '\n', 'n', 's', 't', 'a', 't', 't', ' ', 'd', 'i', 'e', ' '...]
-    # As shown, newlines have to be removed correctly
-    # i.e. not if a sentence ends
+    # WARNING: This is not dynamic and only relies on the word "protokoll"
+    # Assign meta data to variables
+    for i, line in enumerate(meta_array):
+        if "protokoll:" in line.lower():
+            protocol = meta_array[i].lower().title()
+            photograph = meta_array[i + 1].lower().title()
+            title = meta_array[i - 1]
+            author = "Autor*in: " + meta_array[i - 2].lower().title()
 
     # Format the string
+    article = list(article)
     article_edit = article
     for index, letter in enumerate(article):
         # deletes newlines that are made up because of articles structure
@@ -118,18 +105,26 @@ def create_post(page, image_id):
 
 def download_image(page, doc, src):
     """Download the image from the PDF file."""
-    # Get all images from PDF
-    images = page.get_images()
+    # Get image from PDF
+    img_list = page.get_images(full=True)
 
-    # TODO delete manual xref definition
-    # get specific xref we want
-    xref = images[-1][0]
-    image = doc.extract_image(xref)
+    # iterate through image list to get single xref with positive values
+    for img in img_list:
+        i = 0
+        rect = page.get_image_bbox(img)
+        if rect[0] > 0 and rect[1] > 0 and rect[2] > 0 and rect[3] > 0:
+            xref = img[0]  # get specific xref we want
+            i += 1
+
+    if i > 1:
+        print("Warning: More than one image found on page 3")
+    elif i == 1:
+        image = doc.extract_image(xref)
+    else:
+        print("Warning: No image found on page 3")
 
     # TODO delete manual path definition
     # write extracted image to file
-    print("src.name", src.name)
-    print("src.name.split", src.name.split("."))
     image_title = src.name.split(".")[0] + "_image_" + str(xref)
     image_path = os.path.join(
         global_path,
