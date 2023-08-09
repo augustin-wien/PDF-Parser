@@ -24,10 +24,11 @@ def create_post(page, image_id):
     r.y0 = (r.y1 * 2) / 3  # two third of page height
     article = page.get_textbox(r)
 
-    # Second, create rect for article title which is in between half and third bottom of page
+    # Second, create rect for article title
+    # which is in between half and third bottom of page
     r2 = page.rect
     r2.y0 = r2.y1 / 2  # half of page height
-    r2.y1 = r2.y1 * 2 / 3 - 3  # two third of page height -3 so it is not overlapping
+    r2.y1 = r2.y1 * 2 / 3 - 3  # two third of page height -3 so no overlap
     meta_string = page.get_textbox(r2)
     meta_array = meta_string.splitlines()
 
@@ -164,9 +165,9 @@ def upload_image(image_path, image_title):
     return image_id
 
 
-def extract_page(pfd_file):
+def extract_page(pdf_file):
     """Extract the text from the third page of the PDF file."""
-    src = fitz.open(pfd_file)
+    src = fitz.open(pdf_file)
     new_doc = fitz.open()  # empty output PDF
 
     page = src.load_page(1)
