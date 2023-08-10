@@ -1,20 +1,17 @@
-"""Extracts the text from the third page of the PDF file."""
+"""Extracts the text from the first page of the PDF file."""
 
-# Modules for PDF extraction -> PyMuPDF
 import base64
-
-# Modules for Wordpress REST API
-import json
 import os
 
 import fitz
 import requests
+from dotenv import load_dotenv
+from utils import upload_image
 
-# TODO remove hardcoded values
-global_path = (
-    "/home/funny/Documents/Projects/230701-Parsing-Tool/augustin-plugin/sample_data/"
-)
-global_url = "http://localhost:10004/wp-json/wp/v2/"
+load_dotenv()
+
+global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
+global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
 
 
 def create_post(page, image_id):
@@ -124,7 +121,6 @@ def download_image(page, doc, src):
     else:
         print("Warning: No image found on page 3")
 
-    # TODO delete manual path definition
     # write extracted image to file
     image_title = src.name.split(".")[0] + "_image_" + str(xref)
     image_path = os.path.join(
@@ -139,28 +135,6 @@ def download_image(page, doc, src):
         imgout.close()
 
     image_id = upload_image(image_path, image_title)
-
-    return image_id
-
-
-def upload_image(image_path, image_title):
-    """Upload the image to the Wordpress media library."""
-    url = global_url + "media"
-
-    user = "lebe"
-    password = "gUwM J4pU sngD VHpk Cub7 quS2"
-
-    credentials = user + ":" + password
-
-    token = base64.b64encode(credentials.encode())
-
-    header = {"Authorization": "Basic " + token.decode("utf-8")}
-
-    media = {"file": open(image_path, "rb"), "caption": image_title}
-
-    response = requests.post(url, headers=header, files=media)
-
-    image_id = json.loads(response.content)["id"]
 
     return image_id
 

@@ -1,7 +1,15 @@
 """Main function of the FastAPI application."""
-from extract_page_3 import extract_page
+import os
+
+from dotenv import load_dotenv
+from extract_page_0 import save_page_0_as_image
+from extract_page_1 import extract_page
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
+
+load_dotenv()
+
+global_path = os.environ.get("AUGUSTIN_PLUGIN_SAVE_PATH")
 
 app = FastAPI()
 
@@ -24,7 +32,8 @@ async def main():
 def upload(file: UploadFile = File(...)):
     """Upload file endpoint."""
     try:
-        with open(file.filename, "wb") as f:
+        save_path = os.path.join(global_path, file.filename)
+        with open(save_path, "wb") as f:
             while contents := file.file.read(1024 * 1024):
                 f.write(contents)
     except Exception:
@@ -32,6 +41,8 @@ def upload(file: UploadFile = File(...)):
     finally:
         file.file.close()
         # extract page 3 from file
-        response = extract_page(file.filename)
+        response = extract_page(save_path)
+        # extract page 0 from file
+        save_page_0_as_image(save_path)
 
-    return {"message": f"Successfully uploaded {file.filename} and post {response}"}
+    return {"message": f"Uploaded {file.filename} and post {response}"}
