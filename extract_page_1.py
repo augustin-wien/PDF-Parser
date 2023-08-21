@@ -76,8 +76,8 @@ def create_post(page, image_id):
 
     url = global_url + "posts"
 
-    user = "lebe"
-    password = "gUwM J4pU sngD VHpk Cub7 quS2"
+    user = os.getenv("WP_API_USER")
+    password = os.getenv("WP_API_PASSWORD")
 
     credentials = user + ":" + password
 
