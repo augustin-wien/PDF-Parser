@@ -1,6 +1,7 @@
 """Extracts the text from the cover page of the PDF file."""
 # Import necessary libraries
 
+import os
 import re
 
 import fitz
@@ -16,12 +17,27 @@ def save_page_0_as_image(path_to_file):
     # TODO extract the number in a more dynamical way!!
     # This will lead to an error if the directory name changes
     number_in_dir = [int(s) for s in re.findall(r"\d+", path_to_file)]
-    #number_in_dir = [number_in_dir]
-    if len(number_in_dir) != 1:
-        raise ValueError(
-            "No number found in directory name", number_in_dir, path_to_file
-        )
-    image_title = "coverpage-version-%i" % (number_in_dir[0])
+    # number_in_dir = [number_in_dir]
+
+    # TODO remove this debug workaround and remove extracting from directory
+    if "localhost:10004" in os.getenv("AUGUSTIN_PLUGIN_URL"):
+        if len(number_in_dir) != 2:
+            raise ValueError(
+                "Not exactly two numbers found in directory name",
+                number_in_dir,
+                path_to_file,
+            )
+        version_number = number_in_dir[1]
+    # use case for docker development right now
+    else:
+        if len(number_in_dir) != 1:
+            raise ValueError(
+                "Not exactly one number found in directory name",
+                number_in_dir,
+                path_to_file,
+            )
+        version_number = number_in_dir[0]
+    image_title = "coverpage-version-%i" % (version_number)
     image_path = "sample_data/" + image_title + ".png"
     pix.save(
         image_path,
