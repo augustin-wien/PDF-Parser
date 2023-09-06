@@ -6,7 +6,9 @@ import os
 import fitz
 import requests
 from dotenv import load_dotenv
-from utils import upload_image
+import sys
+sys.path.append('../')
+from utils.utils import upload_image
 
 load_dotenv()
 

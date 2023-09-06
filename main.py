@@ -2,8 +2,8 @@
 import os
 
 from dotenv import load_dotenv
-from extract_page_0 import save_page_0_as_image
-from extract_page_1 import extract_page
+from parsers.extract_page_0 import save_page_0_as_image
+from parsers.extract_page_1 import extract_page
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 
@@ -41,10 +41,15 @@ def upload(file: UploadFile = File(...)):
     finally:
         file.file.close()
         try:
+
+            # extract page 0 from file -> Cover page
+            save_page_0_as_image(save_path)
+
+
+
             # extract page 3 from file
             response = extract_page(save_path)
-            # extract page 0 from file
-            save_page_0_as_image(save_path)
+
         except Exception as e:
             return {"message": f"Error extracting: {e}"}
 
