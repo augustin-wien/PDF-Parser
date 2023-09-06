@@ -40,9 +40,12 @@ def upload(file: UploadFile = File(...)):
         return {"message": "There was an error uploading the file"}
     finally:
         file.file.close()
-        # extract page 3 from file
-        response = extract_page(save_path)
-        # extract page 0 from file
-        save_page_0_as_image(save_path)
+        try:
+            # extract page 3 from file
+            response = extract_page(save_path)
+            # extract page 0 from file
+            save_page_0_as_image(save_path)
+        except Exception as e:
+            return {"message": f"Error extracting: {e}"}
 
     return {"message": f"Uploaded {file.filename} and post {response}"}
