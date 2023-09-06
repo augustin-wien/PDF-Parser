@@ -1,6 +1,12 @@
 # augustin-plugin
 
 ## Development
+
+#### Setting up the environment
+1. Install fastapi
+```python
+pip install -r requirements.txt
+```
 #### Starting the app
 1. In your terminal, run
 ```python

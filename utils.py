@@ -16,8 +16,8 @@ def upload_image(image_path, image_title):
     """Upload the image to the Wordpress media library."""
     url = global_url + "media"
 
-    user = "lebe"
-    password = "gUwM J4pU sngD VHpk Cub7 quS2"
+    user = os.getenv("WP_API_USER")
+    password = os.getenv("WP_API_KEY")
 
     credentials = user + ":" + password
 

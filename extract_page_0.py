@@ -15,8 +15,8 @@ def save_page_0_as_image(path_to_file):
     pix = page.get_pixmap()  # render page to an image
     # TODO extract the number in a more dynamical way!!
     # This will lead to an error if the directory name changes
-    number_in_dir = [int(s) for s in re.findall(r"\d+", path_to_file)][1]
-    number_in_dir = [number_in_dir]
+    number_in_dir = [int(s) for s in re.findall(r"\d+", path_to_file)]
+    #number_in_dir = [number_in_dir]
     if len(number_in_dir) != 1:
         raise ValueError(
             "No number found in directory name", number_in_dir, path_to_file
