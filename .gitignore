@@ -135,11 +135,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# static files
-docker/static
 
-# keycloak export
-docker/keycloak/export
-docker/habidat/db/*
-docker/habidat/files/*
-docker/habidat/images/*
+pdf-files/*.pdf
+sample_data/
