@@ -1,0 +1,5 @@
+python-dotenv
+PyMuPDF
+requests
+fastapi[all]
+python-multipart
