@@ -1,10 +1,14 @@
 """Extracts the text from the first page of the PDF file."""
 
 import os
+import sys
 
 import fitz
 from dotenv import load_dotenv
+
+sys.path.append('../')
 from utils import download_image, upload_post
+from utils.utils import upload_image
 
 load_dotenv()
 

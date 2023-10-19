@@ -5,7 +5,10 @@ import os
 import re
 
 import fitz
-from utils import upload_image
+import sys
+sys.path.append('../')
+
+from utils.utils import upload_image
 
 
 def save_page_0_as_image(path_to_file):
