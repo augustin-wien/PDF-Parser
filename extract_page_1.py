@@ -1,12 +1,10 @@
 """Extracts the text from the first page of the PDF file."""
 
-import base64
 import os
 
 import fitz
-import requests
 from dotenv import load_dotenv
-from utils import upload_image
+from utils import download_image, upload_post
 
 load_dotenv()
 
@@ -72,71 +70,18 @@ def create_post(page, image_id):
     for letter in article_edit:
         readable_text += letter
 
-    # POST REQUEST #
-
-    url = global_url + "posts"
-
-    user = os.getenv("WP_API_USER")
-    password = os.getenv("WP_API_KEY")
-
-    credentials = user + ":" + password
-
-    token = base64.b64encode(credentials.encode())
-
-    header = {"Authorization": "Basic " + token.decode("utf-8")}
-
-    post = {
-        "title": title,
-        "status": "publish",
-        "content": readable_text,
-        "excerpt": author + " " + photograph + " " + protocol,
-        "post_type": "post",
-        "featured_media": image_id,
-    }
-
-    response = requests.post(url, headers=header, json=post)
+    response = upload_post(
+        title,
+        readable_text,
+        author,
+        photograph,
+        protocol,
+        image_id,
+    )
 
     print("response", response.content)
 
     return response.content
-
-
-def download_image(page, doc, src):
-    """Download the image from the PDF file."""
-    # Get image from PDF
-    img_list = page.get_images(full=True)
-
-    # iterate through image list to get single xref with positive values
-    for img in img_list:
-        i = 0
-        rect = page.get_image_bbox(img)
-        if rect[0] > 0 and rect[1] > 0 and rect[2] > 0 and rect[3] > 0:
-            xref = img[0]  # get specific xref we want
-            i += 1
-
-    if i > 1:
-        print("Warning: More than one image found on page 3")
-    elif i == 1:
-        image = doc.extract_image(xref)
-    else:
-        print("Warning: No image found on page 3")
-
-    # write extracted image to file
-    image_title = src.name.split(".")[0] + "_image_" + str(xref)
-    image_path = os.path.join(
-        global_path,
-        image_title + "." + image["ext"],
-    )
-    with open(
-        (image_path),
-        "wb",
-    ) as imgout:
-        imgout.write(image["image"])
-        imgout.close()
-
-    image_id = upload_image(image_path, image_title)
-
-    return image_id
 
 
 def extract_page(pdf_file):
