@@ -12,6 +12,21 @@ load_dotenv()
 global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
 global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
 
+def generate_auth_header():
+    try:
+        user = os.getenv("WP_API_USER")
+        password = os.getenv("WP_API_KEY")
+
+        credentials = user + ":" + password
+
+        token = base64.b64encode(credentials.encode())
+
+        header = {"Authorization": "Basic " + token.decode("utf-8")}
+        return header
+    except Exception as e:
+        print(e, os.getenv("WP_API_USER"), os.getenv("WP_API_USER"))
+        raise e
+
 
 def get_header():
     """Get the header for the Wordpress API."""
@@ -24,20 +39,7 @@ def get_header():
         user = os.getenv("WP_API_USER")
         password = os.getenv("WP_API_PASSWORD")
 
-    if user is None:
-        raise HTTPException(status_code=400, detail="WP_API_USER not found!")
-
-    if password is None:
-        raise HTTPException(
-            status_code=400,
-            detail="WP_API_PASSWORD not found!",
-        )
-
-    credentials = user + ":" + password
-
-    token = base64.b64encode(credentials.encode())
-
-    header = {"Authorization": "Basic " + token.decode("utf-8")}
+    header = generate_auth_header()
 
     return header
 

@@ -79,6 +79,8 @@ def create_post(page, image_id):
         image_id,
     )
 
+    print("response", response.content)
+
     return response.content
 
 
