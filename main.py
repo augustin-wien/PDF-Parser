@@ -1,15 +1,13 @@
 """Main function of the FastAPI application."""
 import os
-
-from dotenv import load_dotenv
-from parsers.extract_page_0 import save_page_0_as_image
-from parsers.extract_page_1 import extract_page
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import HTMLResponse
-import fitz
-
 import traceback
 
+import fitz
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import HTMLResponse
+from parsers.extract_page_0 import save_page_0_as_image
+from parsers.extract_page_1 import extract_page
 from utils.utils import identify_category, split_pdf_a3_to_a4
 
 load_dotenv()
@@ -49,7 +47,7 @@ def upload(file: UploadFile = File(...)):
             # split file in single pages
             split_pdf_a3_to_a4(save_path)
 
-            # identify pages 
+            # identify pages
             src = fitz.open(save_path)
             i = 0
             for page in src:
@@ -57,16 +55,16 @@ def upload(file: UploadFile = File(...)):
                     i = i + 1
                     # extract page 0 from file -> Cover page
                     save_page_0_as_image(save_path)
-                    # Todo: create post with type papers and the name of the issue
-                    # Todo: create new term in category "papers" with the name of the issue
+                    # Todo: create post with type papers and the name of the issue # noqa: E501
+                    # Todo: create new term in category "papers" with the name of the issue # noqa: E501
                     # Todo: create new keycloak role with the name of the issue
-                    # Todo: set the cover as image for the main item in the augustin backend
-                    # Todo: set the color code in the settings of the augustin backend
+                    # Todo: set the cover as image for the main item in the augustin backend # noqa: E501
+                    # Todo: set the color code in the settings of the augustin backend # noqa: E501
                     continue
                 category = identify_category(page, i)
                 print(i, category)
                 i = i + 1
-                if category == "einsicht":
+                if category.strip() == "augustiner:in":
                     # extract einsicht article text from file
                     response = extract_page(save_path, category)
 

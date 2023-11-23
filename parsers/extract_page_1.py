@@ -5,10 +5,9 @@ import sys
 
 import fitz
 from dotenv import load_dotenv
+from utils.utils import download_image, upload_post
 
 sys.path.append('../')
-from utils.utils import download_image, upload_post
-from utils.utils import upload_image
 
 load_dotenv()
 
@@ -39,6 +38,11 @@ def create_post(page, image_id, category):
             photograph = meta_array[i + 1].lower().title()
             title = meta_array[i - 1]
             author = "Autor*in: " + meta_array[i - 2].lower().title()
+        else:
+            protocol = "Protokoll: "
+            photograph = "Fotograf*in: "
+            title = "Titel: "
+            author = "Autor*in: "
 
     # Format the string
     article = list(article)

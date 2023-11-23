@@ -2,8 +2,8 @@
 import base64
 import json
 import os
-import fitz
 
+import fitz
 import requests
 from dotenv import load_dotenv
 from fastapi import HTTPException
@@ -13,6 +13,7 @@ load_dotenv()
 global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
 global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
 debug = os.environ.get("DEBUG")
+
 
 def generate_auth_header():
     try:
@@ -24,33 +25,21 @@ def generate_auth_header():
         token = base64.b64encode(credentials.encode())
 
         header = {"Authorization": "Basic " + token.decode("utf-8")}
+
         return header
+
     except Exception as e:
+
         print(e, os.getenv("WP_API_USER"), os.getenv("WP_API_USER"))
+
         raise e
-
-
-def get_header():
-    """Get the header for the Wordpress API."""
-    # if case for local development with localWP instance
-    if "localhost:10004" in os.getenv("AUGUSTIN_PLUGIN_URL"):
-        user = "lebe"
-        password = "gUwM J4pU sngD VHpk Cub7 quS2"
-    # normal case for production
-    else:
-        user = os.getenv("WP_API_USER")
-        password = os.getenv("WP_API_PASSWORD")
-
-    header = generate_auth_header()
-
-    return header
 
 
 def upload_image(image_path, image_title):
     """Upload the image to the Wordpress media library."""
     url = global_url + "media"
 
-    header = get_header()
+    header = generate_auth_header()
 
     media = {"file": open(image_path, "rb"), "caption": image_title}
 
@@ -73,7 +62,13 @@ def upload_post(title, readable_text, author, photograph, protocol, image_id, ca
     """Upload the post via the Wordpress API."""
     url = global_url + "posts"
 
-    header = get_header()
+    header = generate_auth_header()
+
+
+    // TODO add category table
+    category_number = 0
+    if category == "augustiner:in":
+        category_number = 2
 
     post = {
         "title": title,
@@ -82,7 +77,7 @@ def upload_post(title, readable_text, author, photograph, protocol, image_id, ca
         "excerpt": author + " " + photograph + " " + protocol,
         "post_type": "articles",
         "featured_media": image_id,
-        "categories": [category],
+        "categories": [category_number],
     }
 
     response = requests.post(url, headers=header, json=post)
@@ -135,14 +130,16 @@ def download_image(page, doc, src):
 
     return image_id
 
+
 def get_size(filename):
     st = os.stat(filename)
     return st.st_size
 
+
 def split_pdf_a3_to_a4(path_to_file):
     """Split the PDF file into single pages."""
     pdf_document = fitz.open(path_to_file)
-    
+
     # Create a new PDF document for the output
     output_document = fitz.open()
 
@@ -188,6 +185,7 @@ def split_pdf_a3_to_a4(path_to_file):
     output_document.save(path_to_file)
     output_document.close()
 
+
 # identify category of page
 def identify_category(page, i):
     rect = fitz.Rect(60, 30, 200, 60)
@@ -218,7 +216,7 @@ def identify_category(page, i):
             if left <= x0 <= right and top <= y0 <= bottom and left <= x1 <= right and top <= y1 <= bottom:
                 text_in_rect += text + " "
     if text_in_rect == "":
-        text_in_rect = "Keine Kategorie gefunden" #propapblly full site advertisement
+        text_in_rect = "Keine Kategorie gefunden"  # propably full site advertisement # noqa: E501
     # convert to downcase
     text_in_rect = text_in_rect.lower()
     # first page has a different structure
