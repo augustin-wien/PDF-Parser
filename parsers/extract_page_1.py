@@ -5,10 +5,9 @@ import sys
 
 import fitz
 from dotenv import load_dotenv
+from utils.utils import download_image, upload_post
 
 sys.path.append('../')
-from utils import download_image, upload_post
-from utils.utils import upload_image
 
 load_dotenv()
 
@@ -16,7 +15,7 @@ global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
 global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
 
 
-def create_post(page, image_id):
+def create_post(page, image_id, category):
     """Create a post with the extracted text and the uploaded image."""
     # First, create rect for article text which is on the bottom third of page
     r = page.rect
@@ -39,6 +38,11 @@ def create_post(page, image_id):
             photograph = meta_array[i + 1].lower().title()
             title = meta_array[i - 1]
             author = "Autor*in: " + meta_array[i - 2].lower().title()
+        else:
+            protocol = "Protokoll: "
+            photograph = "Fotograf*in: "
+            title = "Titel: "
+            author = "Autor*in: "
 
     # Format the string
     article = list(article)
@@ -81,6 +85,7 @@ def create_post(page, image_id):
         photograph,
         protocol,
         image_id,
+        category
     )
 
     print("response", response.content)
@@ -88,7 +93,7 @@ def create_post(page, image_id):
     return response.content
 
 
-def extract_page(pdf_file):
+def extract_page(pdf_file, category):
     """Extract the text from the third page of the PDF file."""
     src = fitz.open(pdf_file)
     new_doc = fitz.open()  # empty output PDF
@@ -117,6 +122,6 @@ def extract_page(pdf_file):
 
     image_id = download_image(new_page, new_doc, src)
 
-    response = create_post(new_page, image_id)
+    response = create_post(new_page, image_id, category)
 
     return response
