@@ -71,7 +71,18 @@ def upload_post(title, readable_text, author, photograph, protocol, image_id):
     """Upload the post via the Wordpress API."""
     url = global_url + "posts"
 
-    header = get_header()
+    header = generate_auth_header()
+
+    # TODO add category table
+    # category 1 = uncategorized
+    # category 2 = augustiner:in
+    category_number = 1
+    # TODO Work with a dict instead of if-case
+    category_dict = {"uncategorized": 1, "augustiner:in": 2}
+    if category == "augustiner:in":
+        category_number = 2
+    else if category in category_dict.keys():
+        category_number =
 
     post = {
         "title": title,
