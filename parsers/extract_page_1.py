@@ -81,6 +81,7 @@ def create_post(page, image_id):
         photograph,
         protocol,
         image_id,
+        "augustiner:in"
     )
 
     print("response", response.content)

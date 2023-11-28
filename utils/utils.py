@@ -67,22 +67,43 @@ def upload_image(image_path, image_title):
     return image_id
 
 
-def upload_post(title, readable_text, author, photograph, protocol, image_id):
+def check_for_category(category):
+    """
+    Check if the category exists and return it.
+    Return Uncategorized if not.
+    """
+
+    url = global_url + "categories"
+
+    header = get_header()
+
+    response = requests.get(url, headers=header, timeout=5)
+
+    if (response.status_code != 200) and (response.status_code != 201):
+        raise HTTPException(
+            status_code=400,
+            detail="Category could not be checked!"
+            + str(response.status_code)
+            + str(response.content),
+        )
+
+    category_list = json.loads(response.content)
+
+    for cat in category_list:
+        if cat["name"] == category:
+            return cat["id"]
+
+    # if category does not exist, return Uncategorized, which has always id 1
+    return 1
+
+
+def upload_post(title, readable_text, author, photograph, protocol, image_id, category):
     """Upload the post via the Wordpress API."""
     url = global_url + "posts"
 
     header = generate_auth_header()
 
-    # TODO add category table
-    # category 1 = uncategorized
-    # category 2 = augustiner:in
-    category_number = 1
-    # TODO Work with a dict instead of if-case
-    category_dict = {"uncategorized": 1, "augustiner:in": 2}
-    if category == "augustiner:in":
-        category_number = 2
-    else if category in category_dict.keys():
-        category_number =
+    category_number = check_for_category(category)
 
     post = {
         "title": title,
@@ -91,9 +112,10 @@ def upload_post(title, readable_text, author, photograph, protocol, image_id):
         "excerpt": author + " " + photograph + " " + protocol,
         "post_type": "post",
         "featured_media": image_id,
+        "categories": [category_number],
     }
 
-    response = requests.post(url, headers=header, json=post)
+    response = requests.post(url, headers=header, json=post, timeout=5)
 
     if (response.status_code != 200) and (response.status_code != 201):
         raise HTTPException(
