@@ -5,7 +5,8 @@ import sys
 
 import fitz
 from dotenv import load_dotenv
-from utils.utils import download_image, upload_post
+from utils.requests import upload_post
+from utils.utils import download_image
 
 sys.path.append("../")
 
@@ -32,17 +33,25 @@ def create_post(page, image_id, category):
 
     # WARNING: This is not dynamic and only relies on the word "protokoll"
     # Assign meta data to variables
+    title, author, photograph, protocol = "", "", "", ""
     for i, line in enumerate(meta_array):
         if "protokoll:" in line.lower():
             protocol = meta_array[i].lower().title()
             photograph = meta_array[i + 1].lower().title()
             title = meta_array[i - 1]
             author = "Autor*in: " + meta_array[i - 2].lower().title()
-        else:
-            protocol = "Protokoll: "
-            photograph = "Fotograf*in: "
-            title = "Titel: "
-            author = "Autor*in: "
+
+    if title.strip() == "":
+        title = "Kein Titel"
+
+    if author.strip() == "":
+        author = "Kein Autor*in"
+
+    if photograph.strip() == "":
+        photograph = "Kein Fotograf*in"
+
+    if protocol.strip() == "":
+        protocol = "Kein Protokoll"
 
     # Format the string
     article = list(article)

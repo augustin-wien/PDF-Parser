@@ -80,10 +80,10 @@ def check_for_category(category):
     category_list = json.loads(response.content)
 
     for cat in category_list:
-        if cat["name"] == category:
+        if cat["name"].strip() == category.strip():
             return cat["id"]
 
-    # if category does not exist, return Uncategorized, which has always id 1
+    # if category does not exist, return category "Uncategorized", which has always id 1
     return 1
 
 
