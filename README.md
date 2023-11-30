@@ -80,3 +80,13 @@ In this file please add the following code below:
   "flake8.args": ["--max-line-length=120"]
 ```
 
+### Update requirements.txt
+In case you add a new package for this project, first install [pipreqs](https://github.com/bndr/pipreqs) with:
+```python
+pip install pipreqs
+```
+Being in the project directory and to overwrite the current `requirement.txt` run
+```bash
+pipreqs ./ --force
+```
+Check the difference via git to make sure everything is fine and push it afterwards.
