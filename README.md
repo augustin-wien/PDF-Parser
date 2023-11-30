@@ -53,3 +53,30 @@ In your browser visit `localhost:8000`
 In your browser upload your PDF file and check the results on your local Wordpress site.\
 ![GUI of PDF-Parser](docs/pdf-parser-gui.png)
 
+## Development
+
+### VSCode extensions
+For development we use VSCode. Further, to keep the code style consistent we use the following VSCode extensions:
+
+- [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
+- [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance)
+- [Isort](https://marketplace.visualstudio.com/items?itemName=ms-python.isort)
+- [Pylint](https://marketplace.visualstudio.com/items?itemName=ms-python.pylint)
+- [Flake8](https://marketplace.visualstudio.com/items?itemName=ms-python.flake8)
+- [Black Formatter](https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter)
+
+Please install all of these extensions.\
+In the next step please open your VSCode user settings i.e. your `settings.json` via `CTRL + SHIFT + P` and click on `Preferences: Open User Settings (JSON)`.\
+In this file please add the following code below:
+```json
+  // Python specific settings
+  "[python]": {
+    "editor.formatOnType": true,
+    // Set the python formatter to black
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  // Python linter settings
+  "pylint.args": ["--max-line-length=120"],
+  "flake8.args": ["--max-line-length=120"]
+```
+
