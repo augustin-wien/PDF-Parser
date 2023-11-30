@@ -8,7 +8,7 @@ import sys
 import fitz
 from utils.utils import upload_image
 
-sys.path.append('../')
+sys.path.append("../")
 
 
 def save_page_0_as_image(path_to_file):
@@ -40,8 +40,9 @@ def save_page_0_as_image(path_to_file):
                 path_to_file,
             )
         version_number = number_in_dir[0]
-    image_title = "coverpage-version-%i" % (version_number)
-    image_path = "sample_data/" + image_title + ".png"
+    image_title = f"coverpage-version-{version_number}"
+    image_path = f"sample_data/{image_title}.png"
+
     pix.save(
         image_path,
     )
@@ -65,6 +66,6 @@ def extract_color_code(path_to_file):
                 if span["text"] == "Registrierte ":
                     color_code = span["color"]
                 if span["text"] == "tragen" and color_code == span["color"]:
-                    hex_color_code = "#%06x" % color_code
+                    hex_color_code = f"#{color_code:06x}"
 
     return hex_color_code

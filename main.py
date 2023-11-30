@@ -39,8 +39,8 @@ def upload(file: UploadFile = File(...)):
         with open(save_path, "wb") as f:
             while contents := file.file.read(1024 * 1024):
                 f.write(contents)
-    except Exception:
-        return {"message": "There was an error uploading the file"}
+    except IOError as e:
+        return {"message": f"There was an error uploading the file: {e}"}
     finally:
         file.file.close()
         try:
@@ -68,8 +68,9 @@ def upload(file: UploadFile = File(...)):
                     # extract einsicht article text from file
                     response = extract_page(save_path, category)
 
-        except Exception as e:
+        except IOError as e:
             traceback.print_exc()
-            return {"message": f"Error extracting: {e}"}
+            error_message = f"Error extracting: {e}"
+            raise IOError(error_message) from e
 
     return {"message": f"Uploaded {file.filename} and post {response}"}

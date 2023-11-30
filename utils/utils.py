@@ -1,94 +1,15 @@
 """Common utility functions for the plugin."""
-import base64
-import json
 import os
 
 import fitz
-import requests
 from dotenv import load_dotenv
-from fastapi import HTTPException
+from utils.requests import upload_image
 
 load_dotenv()
 
 global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
 global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
 debug = os.environ.get("DEBUG")
-
-
-def generate_auth_header():
-    try:
-        user = os.getenv("WP_API_USER")
-        password = os.getenv("WP_API_KEY")
-
-        credentials = user + ":" + password
-
-        token = base64.b64encode(credentials.encode())
-
-        header = {"Authorization": "Basic " + token.decode("utf-8")}
-
-        return header
-
-    except Exception as e:
-        print(e, os.getenv("WP_API_USER"), os.getenv("WP_API_USER"))
-
-        raise e
-
-
-def upload_image(image_path, image_title):
-    """Upload the image to the Wordpress media library."""
-    url = global_url + "media"
-
-    header = generate_auth_header()
-
-    media = {"file": open(image_path, "rb"), "caption": image_title}
-
-    response = requests.post(url, headers=header, files=media)
-
-    if (response.status_code != 200) and (response.status_code != 201):
-        raise HTTPException(
-            status_code=400,
-            detail="Image could not be uploaded!"
-            + str(response.status_code)
-            + str(response.content),
-        )
-
-    image_id = json.loads(response.content)["id"]
-
-    return image_id
-
-
-def upload_post(title, readable_text, author, photograph, protocol, image_id, category):
-    """Upload the post via the Wordpress API."""
-    url = global_url + "posts"
-
-    header = generate_auth_header()
-
-    # TODO add category table
-    category_number = 0
-    if category == "augustiner:in":
-        category_number = 2
-
-    post = {
-        "title": title,
-        "status": "publish",
-        "content": readable_text,
-        "excerpt": author + " " + photograph + " " + protocol,
-        "post_type": "articles",
-        "featured_media": image_id,
-        "categories": [category_number],
-    }
-
-    response = requests.post(url, headers=header, json=post)
-
-    if (response.status_code != 200) and (response.status_code != 201):
-        raise HTTPException(
-            status_code=400,
-            detail="Post could not be uploaded!"
-            + str(response.status_code)
-            + str(response.content),
-        )
-
-    return response
 
 
 def download_image(page, doc, src):
@@ -130,6 +51,7 @@ def download_image(page, doc, src):
 
 
 def get_size(filename):
+    """Get the size of the image."""
     st = os.stat(filename)
     return st.st_size
 
@@ -182,9 +104,8 @@ def split_pdf_a3_to_a4(path_to_file):
             imgsize = get_size(name_png)
             if not debug:
                 os.remove(name_png)
-            if (
-                imgsize < 1300
-            ):  #  A6 blank page size approximately 1209 Yours may be different, check first
+            #  A6 blank page size approximately 1209 Yours may be different, check first
+            if imgsize < 1300:
                 output_document.delete_page(pno=-1)
                 break
     # Save the output PDF
@@ -194,6 +115,7 @@ def split_pdf_a3_to_a4(path_to_file):
 
 # identify category of page
 def identify_category(page, i):
+    """Identify the category of the page."""
     rect = fitz.Rect(60, 30, 200, 60)
     if i % 2 == 0:
         rect = fitz.Rect(400, 30, 580, 60)

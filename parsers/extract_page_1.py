@@ -7,7 +7,7 @@ import fitz
 from dotenv import load_dotenv
 from utils.utils import download_image, upload_post
 
-sys.path.append('../')
+sys.path.append("../")
 
 load_dotenv()
 
@@ -59,7 +59,6 @@ def create_post(page, image_id, category):
                 print("supposed to break a new line", letter)
 
             elif "-" in article[index - 1]:
-
                 if " " in article[index - 1] and " " in article[index + 1]:
                     # this hyphen has been set on purpose and stays
                     print("hyphen has been set on purpose")
@@ -79,13 +78,7 @@ def create_post(page, image_id, category):
         readable_text += letter
 
     response = upload_post(
-        title,
-        readable_text,
-        author,
-        photograph,
-        protocol,
-        image_id,
-        category
+        title, readable_text, author, photograph, protocol, image_id, category
     )
 
     print("response", response.content)
