@@ -16,6 +16,7 @@ debug = os.environ.get("DEBUG")
 
 
 def generate_auth_header():
+    """Generate the authentication header for the Wordpress API."""
     try:
         user = os.getenv("WP_API_USER")
         password = os.getenv("WP_API_KEY")
@@ -29,7 +30,6 @@ def generate_auth_header():
         return header
 
     except Exception as e:
-
         print(e, os.getenv("WP_API_USER"), os.getenv("WP_API_USER"))
 
         raise e
@@ -43,7 +43,7 @@ def upload_image(image_path, image_title):
 
     media = {"file": open(image_path, "rb"), "caption": image_title}
 
-    response = requests.post(url, headers=header, files=media)
+    response = requests.post(url, headers=header, files=media, timeout=5)
 
     if (response.status_code != 200) and (response.status_code != 201):
         raise HTTPException(
@@ -66,7 +66,7 @@ def check_for_category(category):
 
     url = global_url + "categories"
 
-    header = get_header()
+    header = generate_auth_header()
 
     response = requests.get(url, headers=header, timeout=5)
 
@@ -158,6 +158,7 @@ def download_image(page, doc, src):
 
 
 def get_size(filename):
+    """Get the size of the image."""
     st = os.stat(filename)
     return st.st_size
 
@@ -172,25 +173,28 @@ def split_pdf_a3_to_a4(path_to_file):
     # Iterate through each page in the input PDF
     for spage in pdf_document:  # for each page in input
         if spage.rect.width < spage.rect.height:
-            output_document.insert_pdf(pdf_document, from_page=spage.number, to_page=spage.number)
+            output_document.insert_pdf(
+                pdf_document, from_page=spage.number, to_page=spage.number
+            )
             continue
 
         r = spage.rect  # input page rectangle
-        d = fitz.Rect(spage.cropbox_position,  # CropBox displacement if not
-                      spage.cropbox_position)  # starting at (0, 0)
+        d = fitz.Rect(
+            spage.cropbox_position,  # CropBox displacement if not
+            spage.cropbox_position,
+        )  # starting at (0, 0)
         # --------------------------------------------------------------------------
         # example: cut input page into 2 x 2 parts
         # --------------------------------------------------------------------------
-        r1 = r   # top left rect
+        r1 = r  # top left rect
         r1.x1 /= 2  # half width
         r2 = r1 + (r1.width, 0, r1.width, 0)  # top right rect
         rect_list = [r1, r2]  # put them in a list
 
         for rx in rect_list:  # run thru rect list
             rx += d  # add the CropBox displacement
-            page = output_document.new_page(-1,  # new output page with rx dimensions
-                                width=rx.width,
-                                height=rx.height)
+            # new output page with rx dimensions
+            page = output_document.new_page(-1, width=rx.width, height=rx.height)
             page.show_pdf_page(
                 page.rect,  # fill all new page with the imageb
                 pdf_document,  # input document
@@ -204,7 +208,8 @@ def split_pdf_a3_to_a4(path_to_file):
             imgsize = get_size(name_png)
             if not debug:
                 os.remove(name_png)
-            if imgsize < 1300:  #  A6 blank page size approximately 1209 Yours may be different, check first
+            #  A6 blank page size approximately 1209 Yours may be different, check first
+            if imgsize < 1300:
                 output_document.delete_page(pno=-1)
                 break
     # Save the output PDF
@@ -214,8 +219,9 @@ def split_pdf_a3_to_a4(path_to_file):
 
 # identify category of page
 def identify_category(page, i):
+    """Identify the category of the page."""
     rect = fitz.Rect(60, 30, 200, 60)
-    if i%2 == 0:
+    if i % 2 == 0:
         rect = fitz.Rect(400, 30, 580, 60)
     left, top, right, bottom = rect
     if debug:
@@ -225,12 +231,17 @@ def identify_category(page, i):
     text_in_rect = ""
     for word in page.get_text("words"):
         x0, y0, x1, y1, text = word[:5]
-        if left <= x0 <= right and top <= y0 <= bottom and left <= x1 <= right and top <= y1 <= bottom:
+        if (
+            left <= x0 <= right
+            and top <= y0 <= bottom
+            and left <= x1 <= right
+            and top <= y1 <= bottom
+        ):
             text_in_rect += text + " "
     if text_in_rect == "":
         # maybe the category is on the side
         rect = fitz.Rect(10, 55, 80, 450)
-        if i%2 == 0:
+        if i % 2 == 0:
             rect = fitz.Rect(450, 55, 580, 350)
         left, top, right, bottom = rect
         if debug:
@@ -239,14 +250,20 @@ def identify_category(page, i):
             pix.save(name_png)
         for word in page.get_text("words"):
             x0, y0, x1, y1, text = word[:5]
-            if left <= x0 <= right and top <= y0 <= bottom and left <= x1 <= right and top <= y1 <= bottom:
+            if (
+                left <= x0 <= right
+                and top <= y0 <= bottom
+                and left <= x1 <= right
+                and top <= y1 <= bottom
+            ):
                 text_in_rect += text + " "
     if text_in_rect == "":
-        text_in_rect = "Keine Kategorie gefunden"  # propably full site advertisement # noqa: E501
+        text_in_rect = (
+            "Keine Kategorie gefunden"  # propably full site advertisement # noqa: E501
+        )
     # convert to downcase
     text_in_rect = text_in_rect.lower()
     # first page has a different structure
     if "editorial" in text_in_rect:
         text_in_rect = "editorial"
     return text_in_rect
-
