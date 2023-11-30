@@ -138,4 +138,3 @@ dmypy.json
 
 pdf-files/*.pdf
 sample_data/
-*.png
