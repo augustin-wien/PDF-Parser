@@ -65,7 +65,7 @@ def upload_post(title, readable_text, author, photograph, protocol, image_id, ca
     header = generate_auth_header()
 
 
-    // TODO add category table
+    # TODO add category table
     category_number = 0
     if category == "augustiner:in":
         category_number = 2
