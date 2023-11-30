@@ -42,3 +42,16 @@ jobs:
       - name: Analysing the code with pylint
         run: |
           pylint $(git ls-files '*.py') --max-line-length=120
+      - name: Install dependencies for pylint-exit
+        run: |
+          pip install pylint-exit
+      - name: Analysing the code with pylint-exit
+        run: |
+          pylint-exit -f parseable -d "C,R" $(git ls-files '*.py')
+
+      - name: Install dependencies for black
+        run: |
+          pip install black
+      - name: Format the code with black
+        run: |
+          black --check .
