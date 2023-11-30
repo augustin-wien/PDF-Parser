@@ -1,13 +1,14 @@
 # PDF-Parser
 
-A software to parse PDF's and to extract each article to publish it via the Wordpress API.
+A software to parse print-ready newspaper PDF's. \
+After extracting articles of each page, each article is published via the Wordpress API.
 
 ## Installation guide
 
 ### LocalWP
 
 **Install**\
-First, or a local development setup, you need to install [LocalWP](https://localwp.com/help-docs/getting-started/installing-local/).
+First, for a local development setup you need to install [LocalWP](https://localwp.com/help-docs/getting-started/installing-local/).
 
 **Create website**\
 Second, you need to create a local wordpress website to be able to publish posts via the Parser.\
@@ -33,8 +34,8 @@ pip install -r requirements.txt
 ```
 
 **Create .env file**\
-In the directory copy `.env.example` into `.env`\
-Then, change all the credentials to your specific needs as such:
+In the main directory copy `.env.example` into `.env`\
+Then change all the credentials to your specific needs as such:
 - AUGUSTIN_PLUGIN_URL: The URL of your Wordpress API like `http://localhost:10014/wp-json/wp/v2/`. This is the URL, you should have remembered during the local Wordpress site creation.
 - WP_API_USER: Your Wordpress username, you were supposed to remember during the local Wordpress site creation and you log in with.
 - WP_API_KEY: Your Application password you saved somewhere secret after generating it.
@@ -46,9 +47,9 @@ uvicorn main:app --reload
 ```
 
 **Visit the app**\
-In your browser, visit `localhost:8000`
+In your browser visit `localhost:8000`
 
 **Upload your PDF**\
-In your browser, upload your PDF file and check the results on your local Wordpress site.\
+In your browser upload your PDF file and check the results on your local Wordpress site.\
 ![GUI of PDF-Parser](docs/pdf-parser-gui.png)
 
