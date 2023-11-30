@@ -17,7 +17,7 @@ Important: Remember your username and URL since these credentials are needed for
 **Generate Application Password**\
 Third, in your Wordpress Backend navigate to Users > Profile. Scroll down to the “Application Passwords” heading.\
 Add a new Application Password and copy your new password to a safe place like your Password Manager.\
-![Screenshot](/augustin-plugin/docs/wordpress-application-passwords.png)
+![Screenshot](docs/wordpress-application-passwords.png)
 Detailed instructions can be read [here](https://www.paidmembershipspro.com/create-application-password-wordpress/) and watched [here](https://www.youtube.com/watch?v=bsz6hb1EUMY)
 
 ### PDF-Parser
@@ -49,6 +49,6 @@ uvicorn main:app --reload
 In your browser, visit `localhost:8000`
 
 **Upload your PDF**\
-In your browser, upload your PDF file and check the results on your local Wordpress site.
+In your browser, upload your PDF file and check the results on your local Wordpress site.\
 ![GUI of PDF-Parser](docs/pdf-parser-gui.png)
 
