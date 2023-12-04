@@ -89,4 +89,9 @@ Being in the project directory and to overwrite the current `requirement.txt` ru
 ```bash
 pipreqs ./ --force
 ```
-Check the difference via git to make sure everything is fine and push it afterwards.
+
+**Important sidenote**\
+Pipreqs uses the package fitz but for our CI to run adequate, we need to specify PyMuPDF.\
+So please undo the change in this line afterwards.
+
+Finally, check the rest of the file via git to make sure everything is fine and push it.
