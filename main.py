@@ -1,18 +1,12 @@
 """Main function of the FastAPI application."""
-import os
 import traceback
 
 import fitz
-from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 from parsers.extract_page_0 import save_page_0_as_image
 from parsers.extract_page_1 import extract_page
-from utils.utils import identify_category, split_pdf_a3_to_a4
-
-load_dotenv()
-
-global_path = os.environ.get("AUGUSTIN_PLUGIN_SAVE_PATH")
+from utils.utils import PluginUtility
 
 app = FastAPI()
 
@@ -34,18 +28,19 @@ async def main():
 @app.post("/upload")
 def upload(file: UploadFile = File(...)):
     """Upload file endpoint."""
+
+    # create instance of PluginUtility
+    plugin_utility = PluginUtility()
+
     try:
-        save_path = os.path.join(global_path, file.filename)
-        with open(save_path, "wb") as f:
-            while contents := file.file.read(1024 * 1024):
-                f.write(contents)
+        save_path = plugin_utility.upload_file(file)
     except IOError as e:
         return {"message": f"There was an error uploading the file: {e}"}
     finally:
         file.file.close()
         try:
             # split file in single pages
-            split_pdf_a3_to_a4(save_path)
+            plugin_utility.split_pdf_a3_to_a4(save_path)
 
             # identify pages
             src = fitz.open(save_path)
@@ -61,7 +56,7 @@ def upload(file: UploadFile = File(...)):
                     # Todo: set the cover as image for the main item in the augustin backend # noqa: E501
                     # Todo: set the color code in the settings of the augustin backend # noqa: E501
                     continue
-                category = identify_category(page, i)
+                category = plugin_utility.identify_category(page, i)
                 print(i, category)
                 i = i + 1
                 if category.strip() == "augustiner:in":
