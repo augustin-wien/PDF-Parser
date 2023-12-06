@@ -12,8 +12,7 @@ sys.path.append("../")
 
 load_dotenv()
 
-global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
-global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
+global_url = os.environ.get("WORDPRESS_URL")
 
 plugin_utility = PluginUtility()
 

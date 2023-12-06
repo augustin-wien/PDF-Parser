@@ -9,8 +9,7 @@ from fastapi import HTTPException
 
 load_dotenv()
 
-global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
-global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
+global_url = os.environ.get("WORDPRESS_URL")
 debug = os.environ.get("DEBUG")
 
 
