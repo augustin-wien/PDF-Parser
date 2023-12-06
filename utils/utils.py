@@ -103,7 +103,9 @@ class PluginUtility:
                 )
                 #  Here we will convert the pdf to an image and check the size
                 pix = page.get_pixmap()  # render page to an image
-                name_png = f"page-{page.number}.png"  # _{random.randint(1,100)}
+                name_png = (
+                    f"sample_data/page-{page.number}.png"  # _{random.randint(1,100)}
+                )
                 pix.save(name_png)  # store image as a PNG
                 imgsize = self.get_size(name_png)
                 if not self.debug:
@@ -125,7 +127,7 @@ class PluginUtility:
         left, top, right, bottom = rect
         if self.debug:
             pix = page.get_pixmap(clip=(left, top, right, bottom))
-            name_png = f"page-{page.number}-category.png"
+            name_png = f"sample_data/page-{page.number}-category.png"
             pix.save(name_png)
         text_in_rect = ""
         for word in page.get_text("words"):
@@ -145,7 +147,7 @@ class PluginUtility:
             left, top, right, bottom = rect
             if self.debug:
                 pix = page.get_pixmap(clip=(left, top, right, bottom))
-                name_png = f"page-{page.number}-category_side.png"
+                name_png = f"sample_data/page-{page.number}-category_side.png"
                 pix.save(name_png)
             for word in page.get_text("words"):
                 x0, y0, x1, y1, text = word[:5]
