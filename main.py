@@ -1,4 +1,5 @@
 """Main function of the FastAPI application."""
+import os
 import traceback
 
 import fitz
@@ -34,35 +35,26 @@ def upload(file: UploadFile = File(...)):
     plugin_utility = PluginUtility()
 
     try:
-        save_path = plugin_utility.upload_file(file)
+        save_path_for_pdf, path_to_new_directory = plugin_utility.upload_file(file)
     except IOError as e:
         return {"message": f"There was an error uploading the file: {e}"}
     finally:
         file.file.close()
         try:
-            # split file in single pages
-            plugin_utility.split_pdf_a3_to_a4(save_path)
+            # split file in single pages and save them as pdf
+            number_of_pages = plugin_utility.split_pdf_a3_to_a4(
+                save_path_for_pdf, path_to_new_directory
+            )
 
-            # identify pages
-            src = fitz.open(save_path)
-            i = 0
-            for page in src:
-                if i == 0:
-                    i = i + 1
-                    # extract page 0 from file -> Cover page
-                    # save_page_0_as_image(save_path)
-                    # Todo: create post with type papers and the name of the issue # noqa: E501
-                    # Todo: create new term in category "papers" with the name of the issue # noqa: E501
-                    # Todo: create new keycloak role with the name of the issue
-                    # Todo: set the cover as image for the main item in the augustin backend # noqa: E501
-                    # Todo: set the color code in the settings of the augustin backend # noqa: E501
-                    continue
-                category = plugin_utility.identify_category(page, i)
-                print(i, category)
-                i = i + 1
-                # if category.strip() == "augustiner:in":
-                #     # extract einsicht article text from file
-                #     response = extract_page(save_path, category)
+            # takes range of index starting at 1 and ending at index
+            for index in range(1, number_of_pages):
+                print(f"Extracting page {index}")
+                path_to_page = os.path.join(path_to_new_directory, f"page-{index}.pdf")
+                print("Path to page", path_to_page)
+                src = fitz.open(path_to_page)
+                page = src.load_page(0)
+                category = plugin_utility.identify_category(page, index)
+                print(category)
 
         except IOError as e:
             traceback.print_exc()

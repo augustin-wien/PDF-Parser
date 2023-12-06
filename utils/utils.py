@@ -11,8 +11,8 @@ class PluginUtility:
 
     def __init__(self):
         load_dotenv()
-        self.global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
-        self.global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
+        self.global_save_path = os.environ.get("AUGUSTIN_PLUGIN_SAVE_PATH")
+        self.global_url = os.environ.get("WORDPRESS_URL")
         self.debug = os.environ.get("DEBUG")
 
     def download_image(self, page, doc, src):
@@ -40,7 +40,7 @@ class PluginUtility:
         # write extracted image to file
         image_title = src.name.split(".")[0] + "_image_" + str(xref)
         image_path = os.path.join(
-            self.global_path,
+            self.global_save_path,
             image_title + "." + image["ext"],
         )
         with open(
@@ -121,17 +121,20 @@ class PluginUtility:
         output_document.save(path_to_file)
         output_document.close()
 
-    def split_pdf_a3_to_a4(self, path_to_file):
+    def split_pdf_a3_to_a4(self, path_to_file, path_to_save_files):
         # Function code remains the same, but use self.debug, self.global_path, etc.
         # Replace global variables with self.<variable_name>
         """Split the PDF file into single pages."""
         src = fitz.open(path_to_file)
 
+        index = 0
         # Iterate through each page in the input PDF
         for index, _ in enumerate(src):
             output_document = fitz.open()
             output_document.insert_pdf(src, from_page=index, to_page=index)
-            output_document.save(f"sample_data/page-{index}.pdf")
+            output_document.save(f"{path_to_save_files}page-{index}.pdf")
+
+        return index
 
     def identify_category(self, page, i):
         # Function code remains the same
@@ -185,10 +188,25 @@ class PluginUtility:
 
     def upload_file(self, file):
         """Upload the file to the server."""
-        save_path = os.path.join(self.global_path, file.filename)
 
-        with open(save_path, "wb") as f:
+        # Create a new directory for each uploaded file
+        path_to_new_directory = os.path.join(
+            self.global_save_path, file.filename.split(".")[0]
+        )
+
+        # Catch error if directory already exists
+        try:
+            os.mkdir(path_to_new_directory)
+        except OSError as error:
+            print(error)
+
+        # Save the uploaded file into the new directory
+        save_path_for_pdf = os.path.join(path_to_new_directory, file.filename)
+        with open(save_path_for_pdf, "wb") as f:
             while contents := file.file.read(1024 * 1024):
                 f.write(contents)
 
-        return save_path
+        # Add a slash to the end of the path
+        path_to_new_directory = path_to_new_directory + "/"
+
+        return save_path_for_pdf, path_to_new_directory
