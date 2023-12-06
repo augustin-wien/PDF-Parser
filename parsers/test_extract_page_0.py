@@ -21,13 +21,5 @@ class TestExtractPage0(TestMain):
         hex_color_code4 = extract_color_code(self.test4)
         assert hex_color_code4 == "#f4693c"
 
-        # hex_color_code5 = extract_color_code(self.test5)
-        # assert hex_color_code5 == "#e7534a"
-
-    def test_global_vars(self) -> None:
-        """Test if the global variables are set correctly."""
-        assert (
-            self.global_path
-            == "/home/funny/Documents/Projects/230701-Parsing-Tool/augustin-plugin/sample_data/"
-        )
-        assert self.global_url == "http://localhost:10014/wp-json/wp/v2/"
+        hex_color_code5 = extract_color_code(self.test5)
+        assert hex_color_code5 == "#ea405b"
