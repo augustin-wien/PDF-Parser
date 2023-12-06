@@ -4,8 +4,9 @@ import traceback
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
-from parsers.extract_page_0 import save_page_0_as_image
-from parsers.extract_page_1 import extract_page
+
+# from parsers.extract_page_0 import save_page_0_as_image
+# from parsers.extract_page_1 import extract_page
 from utils.utils import PluginUtility
 
 app = FastAPI()
@@ -49,7 +50,7 @@ def upload(file: UploadFile = File(...)):
                 if i == 0:
                     i = i + 1
                     # extract page 0 from file -> Cover page
-                    save_page_0_as_image(save_path)
+                    # save_page_0_as_image(save_path)
                     # Todo: create post with type papers and the name of the issue # noqa: E501
                     # Todo: create new term in category "papers" with the name of the issue # noqa: E501
                     # Todo: create new keycloak role with the name of the issue
@@ -59,13 +60,13 @@ def upload(file: UploadFile = File(...)):
                 category = plugin_utility.identify_category(page, i)
                 print(i, category)
                 i = i + 1
-                if category.strip() == "augustiner:in":
-                    # extract einsicht article text from file
-                    response = extract_page(save_path, category)
+                # if category.strip() == "augustiner:in":
+                #     # extract einsicht article text from file
+                #     response = extract_page(save_path, category)
 
         except IOError as e:
             traceback.print_exc()
             error_message = f"Error extracting: {e}"
             raise IOError(error_message) from e
-
+    response = "empty"
     return {"message": f"Uploaded {file.filename} and post {response}"}

@@ -61,7 +61,7 @@ class PluginUtility:
 
         return st.st_size
 
-    def split_pdf_a3_to_a4(self, path_to_file):
+    def save_pdf_a3_to_a4_png(self, path_to_file):
         # Function code remains the same, but use self.debug, self.global_path, etc.
         # Replace global variables with self.<variable_name>
         """Split the PDF file into single pages."""
@@ -102,21 +102,36 @@ class PluginUtility:
                     clip=rx,  # which part to use of input page
                 )
                 #  Here we will convert the pdf to an image and check the size
-                pix = page.get_pixmap()  # render page to an image
+                # pix = page.get_pixmap()  # render page to an image
+                doc2 = fitz.open()  # new empty PDF
                 name_png = (
-                    f"sample_data/page-{page.number}.png"  # _{random.randint(1,100)}
+                    f"sample_data/page-{page.number}.pdf"  # _{random.randint(1,100)}
                 )
-                pix.save(name_png)  # store image as a PNG
-                imgsize = self.get_size(name_png)
-                if not self.debug:
-                    os.remove(name_png)
-                #  A6 blank page size approximately 1209 Yours may be different, check first
-                if imgsize < 1300:
-                    output_document.delete_page(pno=-1)
-                    break
+                doc2.insert_pdf(page)
+                # pix.save(name_png)  # store image as a PNG
+                doc2.save(name_png)
+                # imgsize = self.get_size(name_png)
+                # if not self.debug:
+                #     os.remove(name_png)
+                # #  A6 blank page size approximately 1209 Yours may be different, check first
+                # if imgsize < 1300:
+                #     output_document.delete_page(pno=-1)
+                #     break
         # Save the output PDF
         output_document.save(path_to_file)
         output_document.close()
+
+    def split_pdf_a3_to_a4(self, path_to_file):
+        # Function code remains the same, but use self.debug, self.global_path, etc.
+        # Replace global variables with self.<variable_name>
+        """Split the PDF file into single pages."""
+        src = fitz.open(path_to_file)
+
+        # Iterate through each page in the input PDF
+        for index, _ in enumerate(src):
+            output_document = fitz.open()
+            output_document.insert_pdf(src, from_page=index, to_page=index)
+            output_document.save(f"sample_data/page-{index}.pdf")
 
     def identify_category(self, page, i):
         # Function code remains the same
