@@ -32,12 +32,12 @@ jobs:
           echo ${GITHUB_WORKSPACE}
           ls -la ${GITHUB_WORKSPACE}/test_data/
           touch .env
-          echo TEST_DATA_PATH=${GITHUB_WORKSPACE}/sample_data/ >> .env
+          echo TEST_DATA_PATH=${GITHUB_WORKSPACE}/test_data/ >> .env
           echo AUGUSTIN_PLUGIN_SAVE_PATH = ${GITHUB_WORKSPACE}/sample_data/ >> .env
       - name: "Check env file"
         run: |
           cat .env
-          echo "$TEST_DATA_PATH"
+          echo $TEST_DATA_PATH
       - name: Test with pytest
         run: |
           pytest -v
