@@ -2,8 +2,17 @@
 
 
 import fitz
+
+from dotenv import load_dotenv
 from utils.requests import upload_post
 from utils.utils import download_image
+
+sys.path.append("../")
+
+load_dotenv()
+
+global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
+global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
 
 
 def create_post(page, image_id, category):
@@ -24,19 +33,25 @@ def create_post(page, image_id, category):
 
     # WARNING: This is not dynamic and only relies on the word "protokoll"
     # Assign meta data to variables
+    title, author, photograph, protocol = "", "", "", ""
     for i, line in enumerate(meta_array):
         if "protokoll:" in line.lower():
-            meta_information["protocol"] = meta_array[i].lower().title()
-            meta_information["photograph"] = meta_array[i + 1].lower().title()
-            meta_information["title"] = meta_array[i - 1]
-            meta_information["author"] = (
-                "Autor*in: " + meta_array[i - 2].lower().title()
-            )
-        else:
-            meta_information["protocol"] = "Protokoll: "
-            meta_information["photograph"] = "Fotograf*in: "
-            meta_information["title"] = "Titel: "
-            meta_information["author"] = "Autor*in: "
+            protocol = meta_array[i].lower().title()
+            photograph = meta_array[i + 1].lower().title()
+            title = meta_array[i - 1]
+            author = "Autor*in: " + meta_array[i - 2].lower().title()
+
+    if title.strip() == "":
+        title = "Kein Titel"
+
+    if author.strip() == "":
+        author = "Kein Autor*in"
+
+    if photograph.strip() == "":
+        photograph = "Kein Fotograf*in"
+
+    if protocol.strip() == "":
+        protocol = "Kein Protokoll"
 
     # Format the string
     article = list(article)
