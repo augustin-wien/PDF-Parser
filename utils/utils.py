@@ -61,9 +61,7 @@ class PluginUtility:
 
         return st.st_size
 
-    def save_pdf_a3_to_a4_png(self, path_to_file):
-        # Function code remains the same, but use self.debug, self.global_path, etc.
-        # Replace global variables with self.<variable_name>
+    def save_pdf_a3_to_pdf_a4(self, path_to_file, path_to_new_directory):
         """Split the PDF file into single pages."""
         pdf_document = fitz.open(path_to_file)
 
@@ -93,8 +91,11 @@ class PluginUtility:
 
             for rx in rect_list:  # run thru rect list
                 rx += d  # add the CropBox displacement
-                # new output page with rx dimensions
-                page = output_document.new_page(-1, width=rx.width, height=rx.height)
+                page = output_document.new_page(
+                    -1,  # new output page with rx dimensions
+                    width=rx.width,
+                    height=rx.height,
+                )
                 page.show_pdf_page(
                     page.rect,  # fill all new page with the imageb
                     pdf_document,  # input document
@@ -102,30 +103,25 @@ class PluginUtility:
                     clip=rx,  # which part to use of input page
                 )
                 #  Here we will convert the pdf to an image and check the size
-                # pix = page.get_pixmap()  # render page to an image
-                doc2 = fitz.open()  # new empty PDF
-                name_png = (
-                    f"sample_data/page-{page.number}.pdf"  # _{random.randint(1,100)}
-                )
-                doc2.insert_pdf(page)
-                # pix.save(name_png)  # store image as a PNG
-                doc2.save(name_png)
-                # imgsize = self.get_size(name_png)
-                # if not self.debug:
-                #     os.remove(name_png)
-                # #  A6 blank page size approximately 1209 Yours may be different, check first
-                # if imgsize < 1300:
-                #     output_document.delete_page(pno=-1)
-                #     break
+                pix = page.get_pixmap()  # render page to an image
+                name_png = f"{path_to_new_directory}page-{page.number}.png"  # _{random.randint(1,100)}
+                pix.save(name_png)  # store image as a PNG
+                imgsize = self.get_size(name_png)
+                if not self.debug:
+                    os.remove(name_png)
+                if imgsize < 1300:
+                    #  A6 blank page size approximately 1209 Yours may be different, check first
+                    output_document.delete_page(pno=-1)
+                    break
         # Save the output PDF
         output_document.save(path_to_file)
         output_document.close()
 
-    def split_pdf_a3_to_a4(self, path_to_file, path_to_save_files):
+    def split_pdf_to_single_pdfs(self, save_path_for_pdf, path_to_save_files):
         # Function code remains the same, but use self.debug, self.global_path, etc.
         # Replace global variables with self.<variable_name>
         """Split the PDF file into single pages."""
-        src = fitz.open(path_to_file)
+        src = fitz.open(save_path_for_pdf)
 
         index = 0
         # Iterate through each page in the input PDF
@@ -136,7 +132,7 @@ class PluginUtility:
 
         return index
 
-    def identify_category(self, page, i):
+    def identify_category(self, page, i, path_to_new_directory):
         # Function code remains the same
         """Identify the category of the page."""
         rect = fitz.Rect(60, 30, 200, 60)
@@ -145,7 +141,7 @@ class PluginUtility:
         left, top, right, bottom = rect
         if self.debug:
             pix = page.get_pixmap(clip=(left, top, right, bottom))
-            name_png = f"sample_data/page-{page.number}-category.png"
+            name_png = f"{path_to_new_directory}page-{page.number}-category.png"
             pix.save(name_png)
         text_in_rect = ""
         for word in page.get_text("words"):
@@ -165,7 +161,9 @@ class PluginUtility:
             left, top, right, bottom = rect
             if self.debug:
                 pix = page.get_pixmap(clip=(left, top, right, bottom))
-                name_png = f"sample_data/page-{page.number}-category_side.png"
+                name_png = (
+                    f"{path_to_new_directory}page-{page.number}-category_side.png"
+                )
                 pix.save(name_png)
             for word in page.get_text("words"):
                 x0, y0, x1, y1, text = word[:5]
