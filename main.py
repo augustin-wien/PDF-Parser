@@ -55,11 +55,11 @@ def upload(file: UploadFile = File(...)):
                     i = i + 1
                     # extract page 0 from file -> Cover page
                     save_page_0_as_image(save_path)
-                    # Todo: create post with type papers and the name of the issue # noqa: E501
-                    # Todo: create new term in category "papers" with the name of the issue # noqa: E501
-                    # Todo: create new keycloak role with the name of the issue
-                    # Todo: set the cover as image for the main item in the augustin backend # noqa: E501
-                    # Todo: set the color code in the settings of the augustin backend # noqa: E501
+                    # DTodo: create post with type papers and the name of the issue # noqa: E501
+                    # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
+                    # DTodo: create new keycloak role with the name of the issue
+                    # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
+                    # DTodo: set the color code in the settings of the augustin backend # noqa: E501
                     continue
                 category = identify_category(page, i)
                 print(i, category)

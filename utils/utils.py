@@ -86,8 +86,11 @@ def split_pdf_a3_to_a4(path_to_file):
 
         for rx in rect_list:  # run thru rect list
             rx += d  # add the CropBox displacement
-            # new output page with rx dimensions
-            page = output_document.new_page(-1, width=rx.width, height=rx.height)
+            page = output_document.new_page(
+                -1,  # new output page with rx dimensions
+                width=rx.width,
+                height=rx.height,
+            )
             page.show_pdf_page(
                 page.rect,  # fill all new page with the imageb
                 pdf_document,  # input document
@@ -119,8 +122,7 @@ def identify_category(page, i):
     left, top, right, bottom = rect
     if debug:
         pix = page.get_pixmap(clip=(left, top, right, bottom))
-        name_png = f"page-{page.number}-category.png"
-        pix.save(name_png)
+        pix.save(f"page-{page.number}-category.png")
     text_in_rect = ""
     for word in page.get_text("words"):
         x0, y0, x1, y1, text = word[:5]
@@ -139,8 +141,7 @@ def identify_category(page, i):
         left, top, right, bottom = rect
         if debug:
             pix = page.get_pixmap(clip=(left, top, right, bottom))
-            name_png = f"page-{page.number}-category_side.png"
-            pix.save(name_png)
+            pix.save(f"page-{page.number}-category_side.png")
         for word in page.get_text("words"):
             x0, y0, x1, y1, text = word[:5]
             if (
