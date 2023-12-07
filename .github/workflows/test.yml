@@ -30,7 +30,7 @@ jobs:
       - name: "Create env file"
         run: |
           echo ${{ github.workspace }}
-          ${GITHUB_WORKSPACE}
+          echo ${GITHUB_WORKSPACE}
           echo "${{ secrets.ENV_FILE }}" > .env.github
       - name: Test with pytest
         run: |
