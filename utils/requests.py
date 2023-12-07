@@ -39,11 +39,12 @@ def upload_image(image_path, image_title):
 
     header = generate_auth_header()
 
-    media = {"file": open(image_path, "rb"), "caption": image_title}
+    with open(image_path, "rb") as file:
+        media = {"file": file, "caption": image_title}
 
-    response = requests.post(url, headers=header, files=media, timeout=5)
+        response = requests.post(url, headers=header, files=media, timeout=5)
 
-    if (response.status_code != 200) and (response.status_code != 201):
+    if response.status_code not in (200, 201):
         raise HTTPException(
             status_code=400,
             detail="Image could not be uploaded!"
@@ -68,7 +69,7 @@ def check_for_category(category):
 
     response = requests.get(url, headers=header, timeout=5)
 
-    if (response.status_code != 200) and (response.status_code != 201):
+    if response.status_code not in (200, 201):
         raise HTTPException(
             status_code=400,
             detail="Category could not be checked!"
@@ -86,19 +87,23 @@ def check_for_category(category):
     return 1
 
 
-def upload_post(title, readable_text, author, photograph, protocol, image_id, category):
+def upload_post(meta_information, readable_text, image_id):
     """Upload the post via the Wordpress API."""
     url = global_url + "posts"
 
     header = generate_auth_header()
 
-    category_number = check_for_category(category)
+    category_number = check_for_category(meta_information["category"])
 
     post = {
-        "title": title,
+        "title": meta_information["title"],
         "status": "publish",
         "content": readable_text,
-        "excerpt": author + " " + photograph + " " + protocol,
+        "excerpt": meta_information["author"]
+        + " "
+        + meta_information["photograph"]
+        + " "
+        + meta_information["protocol"],
         "post_type": "articles",
         "featured_media": image_id,
         "categories": [category_number],
@@ -106,7 +111,7 @@ def upload_post(title, readable_text, author, photograph, protocol, image_id, ca
 
     response = requests.post(url, headers=header, json=post, timeout=5)
 
-    if (response.status_code != 200) and (response.status_code != 201):
+    if response.status_code not in (200, 201):
         raise HTTPException(
             status_code=400,
             detail="Post could not be uploaded!"

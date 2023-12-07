@@ -17,7 +17,7 @@ def save_page_0_as_image(path_to_file):
 
     page = src.load_page(0)
     pix = page.get_pixmap()  # render page to an image
-    # TODO extract the number in a more dynamical way!!
+    # DTODO extract the number in a more dynamical way!!
     # This will lead to an error if the directory name changes
     number_in_dir = [int(s) for s in re.findall(r"\d+", path_to_file)]
     # number_in_dir = [number_in_dir]
