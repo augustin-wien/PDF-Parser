@@ -104,3 +104,58 @@ Pipreqs uses the package fitz but for our CI to run adequate, we need to specify
 So please undo the change in this line afterwards.
 
 Finally, check the rest of the file via git to make sure everything is fine and push it.
+
+### Linting locally
+
+To run everything as it happens in the Github Actions and fix it afterwards locally, do the following.
+
+**Pylint**
+To run pylint, use this command:
+
+```bash
+pylint $(git ls-files '*.py') --max-line-length=120
+```
+
+If pylint is not installed, run:
+```bash
+pip install pylint
+```
+
+**Flake8**
+To run flake8, use this command:
+```bash
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+```
+
+If flake8 is not installed, run:
+```bash
+pip install flake8
+```
+
+**Black**
+To run black formatter, use this command:
+```bash
+black --check .
+```
+
+If black is not installed, run:
+```bash
+pip install black
+```
+
+### Testing locally
+
+To run everything as it happens in the Github Actions and fix it afterwards locally, do the following.
+
+**Pytest**
+To run pytest, use this command:
+
+```bash
+pytest -v
+```
+
+If pytest is not installed, run:
+```bash
+pip install pytest
+```
