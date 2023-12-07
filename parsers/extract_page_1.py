@@ -1,5 +1,7 @@
 """Extracts the text from the first page of the PDF file."""
 
+import sys
+import os
 
 import fitz
 
@@ -10,10 +12,6 @@ from utils.utils import download_image
 sys.path.append("../")
 
 load_dotenv()
-
-global_path = os.environ.get("AUGUSTIN_PLUGIN_PATH")
-global_url = os.environ.get("AUGUSTIN_PLUGIN_URL")
-
 
 def create_post(page, image_id, category):
     """Create a post with the extracted text and the uploaded image."""
