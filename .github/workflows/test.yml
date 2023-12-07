@@ -31,8 +31,11 @@ jobs:
         run: |
           echo ${GITHUB_WORKSPACE}
           ls -la ${GITHUB_WORKSPACE}/test_data/
-          echo "${{ secrets.ENV_FILE }}" > .env.github
-          cat .env.github
+          touch .env
+          echo TEST_DATA_PATH=${GITHUB_WORKSPACE}/sample_data/ >> .env
+          echo AUGUSTIN_PLUGIN_SAVE_PATH = ${GITHUB_WORKSPACE}/sample_data/ >> .env
+      - name: "Check env file"
+          cat .env
           echo "$TEST_DATA_PATH"
       - name: Test with pytest
         run: |
