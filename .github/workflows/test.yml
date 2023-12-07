@@ -32,6 +32,8 @@ jobs:
           echo ${GITHUB_WORKSPACE}
           ls -la ${GITHUB_WORKSPACE}/test_data/
           echo "${{ secrets.ENV_FILE }}" > .env.github
+          cat .env.github
+          echo "$TEST_DATA_PATH"
       - name: Test with pytest
         run: |
           pytest -v
