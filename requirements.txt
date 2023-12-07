@@ -2,3 +2,4 @@ fastapi==0.104.1
 fitz==0.0.1.dev2
 python-dotenv==1.0.0
 Requests==2.31.0
+python==3.11.4
