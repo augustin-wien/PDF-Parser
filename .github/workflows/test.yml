@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  run:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,8 +29,8 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: "Create env file"
         run: |
-          echo ${{ github.workspace }}
           echo ${GITHUB_WORKSPACE}
+          ls -la ${GITHUB_WORKSPACE}/test_data/
           echo "${{ secrets.ENV_FILE }}" > .env.github
       - name: Test with pytest
         run: |
