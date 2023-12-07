@@ -1,7 +1,6 @@
 """ Test the utils.py file. """
 
 from test_main import TestMain
-from utils.utils import PluginUtility
 
 
 class TestUtils(TestMain):
