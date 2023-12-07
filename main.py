@@ -5,9 +5,6 @@ import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 from parsers.extract_page_1 import extract_page
-
-# from parsers.extract_page_0 import save_page_0_as_image
-# from parsers.extract_page_1 import extract_page
 from utils.utils import PluginUtility
 
 app = FastAPI()
