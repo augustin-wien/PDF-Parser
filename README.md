@@ -29,6 +29,7 @@ Clone this repository on your local machine.
 **Install required packages**\
 We assume you have Python installed and use a virtual environment like [venv](https://www.freecodecamp.org/news/virtualenv-with-virtualenvwrapper-on-ubuntu-18-04/).\
 In your virtual environment, run:
+
 ```python
 pip install -r requirements.txt
 ```
@@ -36,12 +37,14 @@ pip install -r requirements.txt
 **Create .env file**\
 In the main directory copy `.env.example` into `.env`\
 Then change all the credentials to your specific needs as such:
-- AUGUSTIN_PLUGIN_URL: The URL of your Wordpress API like `http://localhost:10014/wp-json/wp/v2/`. This is the URL, you should have remembered during the local Wordpress site creation.
+
+- WORDPRESS_URL: The URL of your Wordpress API like `http://localhost:10014/wp-json/wp/v2/`. This is the URL, you should have remembered during the local Wordpress site creation.
 - WP_API_USER: Your Wordpress username, you were supposed to remember during the local Wordpress site creation and you log in with.
 - WP_API_KEY: Your Application password you saved somewhere secret after generating it.
 
 **Start the app**\
 Next, run in your terminal:
+
 ```python
 uvicorn main:app --reload
 ```
@@ -56,6 +59,7 @@ In your browser upload your PDF file and check the results on your local Wordpre
 ## Development
 
 ### VSCode extensions
+
 For development we use VSCode. Further, to keep the code style consistent we use the following VSCode extensions:
 
 - [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
@@ -68,6 +72,7 @@ For development we use VSCode. Further, to keep the code style consistent we use
 Please install all of these extensions.\
 In the next step please open your VSCode user settings i.e. your `settings.json` via `CTRL + SHIFT + P` and click on `Preferences: Open User Settings (JSON)`.\
 In this file please add the following code below:
+
 ```json
   // Python specific settings
   "[python]": {
@@ -81,12 +86,76 @@ In this file please add the following code below:
 ```
 
 ### Update requirements.txt
+
 In case you add a new package for this project, first install [pipreqs](https://github.com/bndr/pipreqs) with:
+
 ```python
 pip install pipreqs
 ```
+
 Being in the project directory and to overwrite the current `requirement.txt` run
+
 ```bash
 pipreqs ./ --force
 ```
-Check the difference via git to make sure everything is fine and push it afterwards.
+
+**Important sidenote**\
+Pipreqs uses the package fitz but for our CI to run adequate, we need to specify PyMuPDF.\
+So please undo the change in this line afterwards.
+
+Finally, check the rest of the file via git to make sure everything is fine and push it.
+
+### Linting locally
+
+To run everything as it happens in the Github Actions and fix it afterwards locally, do the following.
+
+**Pylint**
+To run pylint, use this command:
+
+```bash
+pylint $(git ls-files '*.py') --max-line-length=120
+```
+
+If pylint is not installed, run:
+```bash
+pip install pylint
+```
+
+**Flake8**
+To run flake8, use this command:
+```bash
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+```
+
+If flake8 is not installed, run:
+```bash
+pip install flake8
+```
+
+**Black**
+To run black formatter, use this command:
+```bash
+black --check .
+```
+
+If black is not installed, run:
+```bash
+pip install black
+```
+
+### Testing locally
+
+To run everything as it happens in the Github Actions and fix it afterwards locally, do the following.
+
+**Pytest**
+To run pytest, use this command:
+
+```bash
+pytest -v
+```
+
+If pytest is not installed, run:
+```bash
+pip install pytest
+```

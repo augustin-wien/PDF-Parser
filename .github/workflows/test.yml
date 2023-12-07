@@ -1,0 +1,46 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Pytest
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11.4
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11.4"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: "Create env file"
+        run: |
+          echo ${GITHUB_WORKSPACE}
+          ls -la ${GITHUB_WORKSPACE}/test_data/
+          touch .env
+          echo TEST_DATA_PATH=${GITHUB_WORKSPACE}/test_data/ >> .env
+          echo SAVE_PATH = ${GITHUB_WORKSPACE}/sample_data/ >> .env
+          echo AUGUSTIN_PLUGIN_PATH = ${GITHUB_WORKSPACE}/sample_data/ >> .env
+          echo WORDPRESS_URL = http://localhost:10014/wp-json/wp/v2/ >> .env
+
+      - name: "Check env file"
+        run: |
+          cat .env
+          echo $TEST_DATA_PATH
+      - name: Test with pytest
+        run: |
+          pytest -v

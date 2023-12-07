@@ -23,7 +23,7 @@ def save_page_0_as_image(path_to_file):
     # number_in_dir = [number_in_dir]
 
     # DTODO remove this debug workaround and remove extracting from directory
-    if "localhost:10014" in os.getenv("AUGUSTIN_PLUGIN_URL"):
+    if "localhost:10014" in os.getenv("WORDPRESS_URL"):
         if len(number_in_dir) != 2:
             raise ValueError(
                 "Not exactly two numbers found in directory name",

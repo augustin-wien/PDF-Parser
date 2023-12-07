@@ -1,17 +1,21 @@
 """Extracts the text from the first page of the PDF file."""
 
-import sys
 import os
+import sys
 
 import fitz
-
 from dotenv import load_dotenv
 from utils.requests import upload_post
-from utils.utils import download_image
+from utils.utils import PluginUtility
 
 sys.path.append("../")
 
 load_dotenv()
+
+global_url = os.environ.get("WORDPRESS_URL")
+
+plugin_utility = PluginUtility()
+
 
 def create_post(page, image_id, category):
     """Create a post with the extracted text and the uploaded image."""
@@ -31,25 +35,17 @@ def create_post(page, image_id, category):
 
     # WARNING: This is not dynamic and only relies on the word "protokoll"
     # Assign meta data to variables
-    title, author, photograph, protocol = "", "", "", ""
+    meta_dict = {"title": "", "author": "", "photograph": "", "protocol": ""}
     for i, line in enumerate(meta_array):
         if "protokoll:" in line.lower():
-            protocol = meta_array[i].lower().title()
-            photograph = meta_array[i + 1].lower().title()
-            title = meta_array[i - 1]
-            author = "Autor*in: " + meta_array[i - 2].lower().title()
+            meta_dict["protocol"] = meta_array[i].lower().title()
+            meta_dict["photograph"] = meta_array[i + 1].lower().title()
+            meta_dict["author"] = "Autor*in: " + meta_array[i - 2].lower().title()
+            meta_dict["title"] = meta_array[i - 1]
 
-    if title.strip() == "":
-        title = "Kein Titel"
-
-    if author.strip() == "":
-        author = "Kein Autor*in"
-
-    if photograph.strip() == "":
-        photograph = "Kein Fotograf*in"
-
-    if protocol.strip() == "":
-        protocol = "Kein Protokoll"
+    for key, value in meta_dict.items():
+        if value.strip() == "":
+            meta_dict[key] = "Kein " + key
 
     # Format the string
     article = list(article)
@@ -118,7 +114,7 @@ def extract_page(pdf_file, category):
         clip=r2,
     )
 
-    image_id = download_image(new_page, new_doc, src)
+    image_id = plugin_utility.download_image(new_page, new_doc, src)
 
     response = create_post(new_page, image_id, category)
 

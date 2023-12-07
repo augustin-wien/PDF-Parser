@@ -1,18 +1,11 @@
 """Main function of the FastAPI application."""
-import os
 import traceback
 
 import fitz
-from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
-from parsers.extract_page_0 import save_page_0_as_image
 from parsers.extract_page_1 import extract_page
-from utils.utils import identify_category, split_pdf_a3_to_a4
-
-load_dotenv()
-
-global_path = os.environ.get("AUGUSTIN_PLUGIN_SAVE_PATH")
+from utils.utils import PluginUtility
 
 app = FastAPI()
 
@@ -34,43 +27,49 @@ async def main():
 @app.post("/upload")
 def upload(file: UploadFile = File(...)):
     """Upload file endpoint."""
+
+    # create instance of PluginUtility
+    plugin_utility = PluginUtility()
+
     try:
-        save_path = os.path.join(global_path, file.filename)
-        with open(save_path, "wb") as f:
-            while contents := file.file.read(1024 * 1024):
-                f.write(contents)
+        save_path_for_pdf, path_to_new_directory = plugin_utility.upload_file(file)
+        print(f"Save path for pdf: {save_path_for_pdf}")
+        print(f"Path to new directory: {path_to_new_directory}")
     except IOError as e:
         return {"message": f"There was an error uploading the file: {e}"}
     finally:
         file.file.close()
         try:
             # split file in single pages
-            split_pdf_a3_to_a4(save_path)
+            plugin_utility.save_pdf_a3_to_pdf_a4(
+                save_path_for_pdf, path_to_new_directory
+            )
+            # split file in single pages and save them as pdf
+            number_of_pages = plugin_utility.split_pdf_to_single_pdfs(
+                save_path_for_pdf, path_to_new_directory
+            )
+            print(f"Number of pages: {number_of_pages}")
 
-            # identify pages
-            src = fitz.open(save_path)
-            i = 0
-            for page in src:
-                if i == 0:
-                    i = i + 1
-                    # extract page 0 from file -> Cover page
-                    save_page_0_as_image(save_path)
-                    # DTodo: create post with type papers and the name of the issue # noqa: E501
-                    # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
-                    # DTodo: create new keycloak role with the name of the issue
-                    # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
-                    # DTodo: set the color code in the settings of the augustin backend # noqa: E501
-                    continue
-                category = identify_category(page, i)
-                print(i, category)
-                i = i + 1
+            src = fitz.open(save_path_for_pdf)
+
+            for index, page in enumerate(src):
+                category = plugin_utility.identify_category(
+                    page, index, path_to_new_directory
+                )
+                print(f"Category: {category}")
+                # DTodo: create post with type papers and the name of the issue # noqa: E501
+                # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
+                # DTodo: create new keycloak role with the name of the issue
+                # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
+                # DTodo: set the color code in the settings of the augustin backend # noqa: E501
                 if category.strip() == "augustiner:in":
                     # extract einsicht article text from file
-                    response = extract_page(save_path, category)
+                    response = extract_page(save_path_for_pdf, category)
 
         except IOError as e:
             traceback.print_exc()
             error_message = f"Error extracting: {e}"
             raise IOError(error_message) from e
-
+    if not response:
+        response = "empty"
     return {"message": f"Uploaded {file.filename} and post {response}"}
