@@ -35,25 +35,17 @@ def create_post(page, image_id, category):
 
     # WARNING: This is not dynamic and only relies on the word "protokoll"
     # Assign meta data to variables
-    title, author, photograph, protocol = "", "", "", ""
+    meta_dict = {"title": "", "author": "", "photograph": "", "protocol": ""}
     for i, line in enumerate(meta_array):
         if "protokoll:" in line.lower():
-            protocol = meta_array[i].lower().title()
-            photograph = meta_array[i + 1].lower().title()
-            title = meta_array[i - 1]
-            author = "Autor*in: " + meta_array[i - 2].lower().title()
+            meta_dict["protocol"] = meta_array[i].lower().title()
+            meta_dict["photograph"] = meta_array[i + 1].lower().title()
+            meta_dict["author"] = "Autor*in: " + meta_array[i - 2].lower().title()
+            meta_dict["title"] = meta_array[i - 1]
 
-    if title.strip() == "":
-        title = "Kein Titel"
-
-    if author.strip() == "":
-        author = "Kein Autor*in"
-
-    if photograph.strip() == "":
-        photograph = "Kein Fotograf*in"
-
-    if protocol.strip() == "":
-        protocol = "Kein Protokoll"
+    for key, value in meta_dict.items():
+        if value.strip() == "":
+            meta_dict[key] = "Kein " + key
 
     # Format the string
     article = list(article)

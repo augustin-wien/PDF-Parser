@@ -37,7 +37,7 @@ class TestMain:
         cls.save4 = cls.global_save_path + "574_augustin_fertig_kontrolle/"
         cls.save5 = cls.global_save_path + "570_augustin_fertig_kontrolle/"
 
-    # TODO test uploading a PDF file
+    # DTODO test uploading a PDF file
     # Source: https://fastapi.tiangolo.com/tutorial/testing/
 
     # def test_read_main(self):

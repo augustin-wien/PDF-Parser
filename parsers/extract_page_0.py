@@ -22,7 +22,7 @@ def save_page_0_as_image(path_to_file):
     number_in_dir = [int(s) for s in re.findall(r"\d+", path_to_file)]
     # number_in_dir = [number_in_dir]
 
-    # TODO remove this debug workaround and remove extracting from directory
+    # DTODO remove this debug workaround and remove extracting from directory
     if "localhost:10014" in os.getenv("WORDPRESS_URL"):
         if len(number_in_dir) != 2:
             raise ValueError(

@@ -15,6 +15,9 @@ class PluginUtility:
         self.global_url = os.environ.get("WORDPRESS_URL")
         self.debug = os.environ.get("DEBUG")
 
+        # Create a new PDF document for the output
+        self.output_document = fitz.open()
+
     def download_image(self, page, doc, src):
         # Function code remains the same, but use self.global_path, self.debug, etc.
         # Replace global variables with self.<variable_name>
@@ -65,13 +68,10 @@ class PluginUtility:
         """Split the PDF file into single pages."""
         pdf_document = fitz.open(path_to_file)
 
-        # Create a new PDF document for the output
-        output_document = fitz.open()
-
         # Iterate through each page in the input PDF
         for spage in pdf_document:  # for each page in input
             if spage.rect.width < spage.rect.height:
-                output_document.insert_pdf(
+                self.output_document.insert_pdf(
                     pdf_document, from_page=spage.number, to_page=spage.number
                 )
                 continue
@@ -91,7 +91,7 @@ class PluginUtility:
 
             for rx in rect_list:  # run thru rect list
                 rx += d  # add the CropBox displacement
-                page = output_document.new_page(
+                page = self.output_document.new_page(
                     -1,  # new output page with rx dimensions
                     width=rx.width,
                     height=rx.height,
@@ -111,11 +111,11 @@ class PluginUtility:
                     os.remove(name_png)
                 if imgsize < 1300:
                     #  A6 blank page size approximately 1209 Yours may be different, check first
-                    output_document.delete_page(pno=-1)
+                    self.output_document.delete_page(pno=-1)
                     break
         # Save the output PDF
-        output_document.save(path_to_file)
-        output_document.close()
+        self.output_document.save(path_to_file)
+        self.output_document.close()
 
     def split_pdf_to_single_pdfs(self, save_path_for_pdf, path_to_save_files):
         # Function code remains the same, but use self.debug, self.global_path, etc.
@@ -126,9 +126,9 @@ class PluginUtility:
         index = 0
         # Iterate through each page in the input PDF
         for index, _ in enumerate(src):
-            output_document = fitz.open()
-            output_document.insert_pdf(src, from_page=index, to_page=index)
-            output_document.save(f"{path_to_save_files}page-{index}.pdf")
+            self.output_document = fitz.open()
+            self.output_document.insert_pdf(src, from_page=index, to_page=index)
+            self.output_document.save(f"{path_to_save_files}page-{index}.pdf")
 
         return index
 
@@ -138,19 +138,26 @@ class PluginUtility:
         rect = fitz.Rect(60, 30, 200, 60)
         if i % 2 == 0:
             rect = fitz.Rect(400, 30, 580, 60)
-        left, top, right, bottom = rect
+        rect_dict = {"left": rect, "top": rect, "right": rect, "bottom": rect}
         if self.debug:
-            pix = page.get_pixmap(clip=(left, top, right, bottom))
+            pix = page.get_pixmap(
+                clip=(
+                    rect_dict["left"],
+                    rect_dict["top"],
+                    rect_dict["right"],
+                    rect_dict["bottom"],
+                )
+            )
             name_png = f"{path_to_new_directory}page-{page.number}-category.png"
             pix.save(name_png)
         text_in_rect = ""
         for word in page.get_text("words"):
             x0, y0, x1, y1, text = word[:5]
             if (
-                left <= x0 <= right
-                and top <= y0 <= bottom
-                and left <= x1 <= right
-                and top <= y1 <= bottom
+                rect_dict["left"] <= x0 <= rect_dict["right"]
+                and rect_dict["top"] <= y0 <= rect_dict["bottom"]
+                and rect_dict["left"] <= x1 <= rect_dict["right"]
+                and rect_dict["top"] <= y1 <= rect_dict["bottom"]
             ):
                 text_in_rect += text + " "
         if text_in_rect == "":
