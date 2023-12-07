@@ -19,7 +19,7 @@ class TestMain:
         load_dotenv()
         cls.test_data_path = os.environ.get("TEST_DATA_PATH")
         print(cls.test_data_path)
-        cls.global_save_path = os.environ.get("AUGUSTIN_PLUGIN_SAVE_PATH")
+        cls.global_save_path = os.environ.get("SAVE_PATH")
         cls.global_url = os.environ.get("WORDPRESS_URL")
         cls.debug = os.environ.get("DEBUG")
         cls.client = TestClient(app)

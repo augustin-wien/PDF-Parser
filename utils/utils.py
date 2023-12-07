@@ -11,7 +11,7 @@ class PluginUtility:
 
     def __init__(self):
         load_dotenv()
-        self.global_save_path = os.environ.get("AUGUSTIN_PLUGIN_SAVE_PATH")
+        self.global_save_path = os.environ.get("SAVE_PATH")
         self.global_url = os.environ.get("WORDPRESS_URL")
         self.debug = os.environ.get("DEBUG")
 
@@ -81,9 +81,6 @@ class PluginUtility:
                 spage.cropbox_position,  # CropBox displacement if not
                 spage.cropbox_position,
             )  # starting at (0, 0)
-            # --------------------------------------------------------------------------
-            # example: cut input page into 2 x 2 parts
-            # --------------------------------------------------------------------------
             r1 = r  # top left rect
             r1.x1 /= 2  # half width
             r2 = r1 + (r1.width, 0, r1.width, 0)  # top right rect

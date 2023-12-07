@@ -33,7 +33,7 @@ jobs:
           ls -la ${GITHUB_WORKSPACE}/test_data/
           touch .env
           echo TEST_DATA_PATH=${GITHUB_WORKSPACE}/test_data/ >> .env
-          echo AUGUSTIN_PLUGIN_SAVE_PATH = ${GITHUB_WORKSPACE}/sample_data/ >> .env
+          echo SAVE_PATH = ${GITHUB_WORKSPACE}/sample_data/ >> .env
           echo AUGUSTIN_PLUGIN_PATH = ${GITHUB_WORKSPACE}/sample_data/ >> .env
           echo WORDPRESS_URL = http://localhost:10014/wp-json/wp/v2/ >> .env
 

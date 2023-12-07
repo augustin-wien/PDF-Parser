@@ -27,7 +27,6 @@ class TestUtils(TestMain):
 
     def test_global_vars(self) -> None:
         """Test if the global variables are set correctly."""
-        print("qwwqqweq", self.test_data_path)
         assert (
             self.test_data_path == "/home/runner/work/PDF-Parser/PDF-Parser/test_data/"
         )
