@@ -62,6 +62,7 @@ def upload(file: UploadFile = File(...)):
                 # DTodo: create new keycloak role with the name of the issue
                 # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
                 # DTodo: set the color code in the settings of the augustin backend # noqa: E501
+                response = ""
                 if category.strip() == "augustiner:in":
                     # extract einsicht article text from file
                     response = extract_page(save_path_for_pdf, category)
