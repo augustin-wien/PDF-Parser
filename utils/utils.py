@@ -135,26 +135,27 @@ class PluginUtility:
         rect = fitz.Rect(60, 30, 200, 60)
         if i % 2 == 0:
             rect = fitz.Rect(400, 30, 580, 60)
-        rect_dict = {"left": rect, "top": rect, "right": rect, "bottom": rect}
+        left, top, right, bottom = rect
         if self.debug:
             pix = page.get_pixmap(
                 clip=(
-                    rect_dict["left"],
-                    rect_dict["top"],
-                    rect_dict["right"],
-                    rect_dict["bottom"],
+                    left,
+                    top,
+                    right,
+                    bottom,
                 )
             )
+
             name_png = f"{path_to_new_directory}page-{page.number}-category.png"
             pix.save(name_png)
         text_in_rect = ""
         for word in page.get_text("words"):
             x0, y0, x1, y1, text = word[:5]
             if (
-                rect_dict["left"] <= x0 <= rect_dict["right"]
-                and rect_dict["top"] <= y0 <= rect_dict["bottom"]
-                and rect_dict["left"] <= x1 <= rect_dict["right"]
-                and rect_dict["top"] <= y1 <= rect_dict["bottom"]
+                left <= x0 <= right
+                and top <= y0 <= bottom
+                and left <= x1 <= right
+                and top <= y1 <= bottom
             ):
                 text_in_rect += text + " "
         if text_in_rect == "":
