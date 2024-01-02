@@ -18,7 +18,7 @@ class TestUtils(TestMain):
             response = self.client.post("/upload", files=files)
             assert response.status_code == 200
             assert response.json() == {
-                "message": "Uploaded 582_augustin_fertig_kontrolle.pdf and post empty"
+                "message": "Successfully uploaded 582_augustin_fertig_kontrolle.pdf"
             }
 
         with open(self.test2, "rb") as f:
@@ -26,7 +26,7 @@ class TestUtils(TestMain):
             response = self.client.post("/upload", files=files)
             assert response.status_code == 200
             assert response.json() == {
-                "message": "Uploaded 576_augustin_fertig_kontrolle.pdf and post empty"
+                "message": "Successfully uploaded 576_augustin_fertig_kontrolle.pdf"
             }
 
         with open(self.test3, "rb") as f:
@@ -34,7 +34,7 @@ class TestUtils(TestMain):
             response = self.client.post("/upload", files=files)
             assert response.status_code == 200
             assert response.json() == {
-                "message": "Uploaded 575_augustin_fertig_kontrolle.pdf and post empty"
+                "message": "Successfully uploaded 575_augustin_fertig_kontrolle.pdf"
             }
 
         with open(self.test4, "rb") as f:
@@ -42,7 +42,7 @@ class TestUtils(TestMain):
             response = self.client.post("/upload", files=files)
             assert response.status_code == 200
             assert response.json() == {
-                "message": "Uploaded 574_augustin_fertig_kontrolle.pdf and post empty"
+                "message": "Successfully uploaded 574_augustin_fertig_kontrolle.pdf"
             }
 
         with open(self.test5, "rb") as f:
@@ -50,5 +50,5 @@ class TestUtils(TestMain):
             response = self.client.post("/upload", files=files)
             assert response.status_code == 200
             assert response.json() == {
-                "message": "Uploaded 570_augustin_fertig_kontrolle.pdf and post empty"
+                "message": "Successfully uploaded 570_augustin_fertig_kontrolle.pdf"
             }
