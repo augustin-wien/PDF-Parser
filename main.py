@@ -4,7 +4,6 @@ import traceback
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
-from parsers.extract_page_1 import extract_page
 from utils.utils import PluginUtility
 
 app = FastAPI()
@@ -53,6 +52,10 @@ def upload(file: UploadFile = File(...)):
             src = fitz.open(save_path_for_pdf)
 
             for index, page in enumerate(src):
+                # skip first page
+                if index == 0:
+                    continue
+
                 category = plugin_utility.identify_category(
                     page, index, path_to_new_directory
                 )
@@ -62,14 +65,13 @@ def upload(file: UploadFile = File(...)):
                 # DTodo: create new keycloak role with the name of the issue
                 # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
                 # DTodo: set the color code in the settings of the augustin backend # noqa: E501
-                if category.strip() == "augustiner:in":
-                    # extract einsicht article text from file
-                    response = extract_page(save_path_for_pdf, category)
+                # if category.strip() == "augustiner:in":
+                #     # extract einsicht article text from file
+                #     response = extract_page(save_path_for_pdf, category)
 
         except IOError as e:
             traceback.print_exc()
             error_message = f"Error extracting: {e}"
             raise IOError(error_message) from e
-    if not response:
-        response = "empty"
-    return {"message": f"Uploaded {file.filename} and post {response}"}
+
+    return {"message": f"Successfully uploaded {file.filename}"}
