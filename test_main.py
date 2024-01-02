@@ -6,9 +6,6 @@ from test_setup import TestMain
 class TestUtils(TestMain):
     """Test class to test all functions within utils.py file."""
 
-    # DTODO test uploading a PDF file
-    # Source: https://fastapi.tiangolo.com/tutorial/testing/
-
     def test_read_main(self):
         """Test the main endpoint."""
         response = self.client.get("/")
