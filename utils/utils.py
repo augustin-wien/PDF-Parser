@@ -7,7 +7,7 @@ from utils.requests import upload_image
 
 
 class PluginUtility:
-    """Common utility functions for the plugin."""
+    """Class for common utility functions for the plugin."""
 
     def __init__(self):
         load_dotenv()
