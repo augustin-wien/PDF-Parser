@@ -1,7 +1,7 @@
 """ Test the extract_page_0.py file. """
 
 from parsers.extract_page_0 import extract_color_code
-from test_main import TestMain
+from test_setup import TestMain
 
 
 class TestExtractPage0(TestMain):

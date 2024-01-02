@@ -41,6 +41,13 @@ jobs:
         run: |
           cat .env
           echo $TEST_DATA_PATH
+      - name: "Create directories for sample data"
+        run: |
+          mkdir -p ${GITHUB_WORKSPACE}/sample_data/570_augustin_fertig_kontrolle/
+          mkdir -p ${GITHUB_WORKSPACE}/sample_data/574_augustin_fertig_kontrolle/
+          mkdir -p ${GITHUB_WORKSPACE}/sample_data/575_Augustin_fertig_kontrolle/
+          mkdir -p ${GITHUB_WORKSPACE}/sample_data/576_Augustin_fertig_kontrolle/
+          mkdir -p ${GITHUB_WORKSPACE}/sample_data/582_Augustin_fertig_kontrolle/
       - name: Test with pytest
         run: |
           pytest -v
