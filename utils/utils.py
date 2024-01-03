@@ -197,6 +197,8 @@ class PluginUtility:
             ):
                 text_in_rect += text + " "
 
+        text_in_rect = text_in_rect.strip()
+
         return text_in_rect
 
     def upload_file(self, file):
