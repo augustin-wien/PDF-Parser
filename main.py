@@ -32,8 +32,6 @@ def upload(file: UploadFile = File(...)):
 
     try:
         save_path_for_pdf, path_to_new_directory = plugin_utility.upload_file(file)
-        print(f"Save path for pdf: {save_path_for_pdf}")
-        print(f"Path to new directory: {path_to_new_directory}")
     except IOError as e:
         return {"message": f"There was an error uploading the file: {e}"}
     finally:
@@ -46,6 +44,7 @@ def upload(file: UploadFile = File(...)):
 
             src = fitz.open(save_path_for_pdf)
 
+            categories = []
             for index, page in enumerate(src):
                 # skip first page
                 if index == 0:
@@ -54,7 +53,7 @@ def upload(file: UploadFile = File(...)):
                 category = plugin_utility.identify_category(
                     page, index, path_to_new_directory
                 )
-                print(f"Category: {category}")
+                categories.append(category)
                 # DTodo: create post with type papers and the name of the issue # noqa: E501
                 # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
                 # DTodo: create new keycloak role with the name of the issue
@@ -69,4 +68,7 @@ def upload(file: UploadFile = File(...)):
             error_message = f"Error extracting: {e}"
             raise IOError(error_message) from e
 
-    return {"message": f"Successfully uploaded {file.filename}"}
+    return {
+        "message": f"Successfully uploaded {file.filename}",
+        "categories": categories,
+    }
