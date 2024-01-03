@@ -43,11 +43,6 @@ def upload(file: UploadFile = File(...)):
             plugin_utility.save_pdf_a3_to_pdf_a4(
                 save_path_for_pdf, path_to_new_directory
             )
-            # split file in single pages and save them as pdf
-            number_of_pages = plugin_utility.split_pdf_to_single_pdfs(
-                save_path_for_pdf, path_to_new_directory
-            )
-            print(f"Number of pages: {number_of_pages}")
 
             src = fitz.open(save_path_for_pdf)
 

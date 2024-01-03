@@ -146,11 +146,7 @@ class PluginUtility:
                 )
             )
 
-            rect = fitz.Rect(450, 55, 580, 350)
         left, top, right, bottom = rect
-        if self.debug:
-            pix = page.get_pixmap(clip=(left, top, right, bottom))
-            pix.save(f"page-{page.number}-category_side.png")
         if self.debug:
             pix = page.get_pixmap(clip=(left, top, right, bottom))
             name_png = f"{path_to_new_directory}page-{page.number}-category.png"
