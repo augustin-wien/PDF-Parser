@@ -21,6 +21,11 @@ Add a new Application Password and copy your new password to a safe place like y
 ![Screenshot](docs/wordpress-application-passwords.png)
 Detailed instructions can be read [here](https://www.paidmembershipspro.com/create-application-password-wordpress/) and watched [here](https://www.youtube.com/watch?v=bsz6hb1EUMY)
 
+**Create several categories**\
+In your wordpress backend, click on the tab 'Posts' to the below submenu 'Categories'.\
+Now create the following categories step by step without the quotation marks:\
+"editorial","augustiner:in","einsicht","das wahre leben","cover","cover","cover","cover","tun & lassen","tun & lassen","tun & lassen","tun & lassen","vorstadt","vorstadt","lokalmatador:in nº","vorstadt","art.ist.in","art.ist.in","art.ist.in","art.ist.in","dichter innenteil","dichter innenteil","dichter innenteil","dichter innenteil","augustinchen","augustinchen"
+
 ### PDF-Parser
 
 **Clone**\
