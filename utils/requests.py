@@ -63,7 +63,7 @@ def check_for_category(category):
     Return Uncategorized if not.
     """
 
-    url = global_url + "categories"
+    url = global_url + "categories?per_page=100"
 
     header = generate_auth_header()
 
@@ -80,6 +80,8 @@ def check_for_category(category):
     category_list = json.loads(response.content)
 
     for cat in category_list:
+        if category == "tun & lassen" and cat["name"].strip() == "tun &amp; lassen":
+            return cat["id"]
         if cat["name"].strip() == category.strip():
             return cat["id"]
 
@@ -105,7 +107,6 @@ def upload_post(meta_information, readable_text, image_id):
         + " "
         + meta_information["protocol"],
         "post_type": "articles",
-        "featured_media": image_id,
         "categories": [category_number],
     }
 
