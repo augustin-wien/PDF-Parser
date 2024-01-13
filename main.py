@@ -74,7 +74,7 @@ def upload(file: UploadFile = File(...)):
                     error_message = f"Error posting: {e}"
                     raise ValueError(error_message) from e
 
-                if response.status_code != 200 and response.status_code != 201:
+                if response.status_code not in [200, 201]:
                     raise IOError(
                         f"Error posting to Wordpress: {response.content} with status code {response.status_code}"
                     )

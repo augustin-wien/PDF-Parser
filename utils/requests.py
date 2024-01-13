@@ -100,7 +100,8 @@ def upload_post(meta_information, readable_text, image_id):
     post = {
         "title": meta_information["title"],
         "status": "publish",
-        "content": readable_text,
+        # WIP: Remove image_id once the image is uploaded to the media library
+        "content": readable_text + image_id,
         "excerpt": meta_information["author"]
         + " "
         + meta_information["photograph"]
