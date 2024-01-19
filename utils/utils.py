@@ -135,6 +135,12 @@ class PluginUtility:
         rect = fitz.Rect(60, 30, 200, 60)
         if i % 2 == 0:
             rect = fitz.Rect(400, 30, 580, 60)
+        left, top, right, bottom = rect
+        if self.debug:
+            # Save the image to the new directory
+            pix = page.get_pixmap(clip=(left, top, right, bottom))
+            name_png = f"{path_to_new_directory}page-{page.number}-category.png"
+            pix.save(name_png)
 
         # Check if the category is in the rect on top
         text_in_rect = self._check_for_word_in_rect(page, rect, path_to_new_directory)
