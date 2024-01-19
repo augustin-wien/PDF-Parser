@@ -62,7 +62,7 @@ def upload(file: UploadFile = File(...)):
                     raw_text = get_raw_text(page)
                 except IOError as e:
                     traceback.print_exc()
-                    error_message = f"Error extracting: {e}"
+                    error_message = f"Error extracting raw text: {e}"
                     raise IOError(error_message) from e
 
                 # Try posting raw text and category to Wordpress backend with exception handling
@@ -71,8 +71,8 @@ def upload(file: UploadFile = File(...)):
                     response = requests.upload_post(meta_information, raw_text, "")
                 except IOError as e:
                     traceback.print_exc()
-                    error_message = f"Error posting: {e}"
-                    raise ValueError(error_message) from e
+                    error_message = f"WPLocal not running? No connection established uploading from main: {e}"
+                    raise IOError(error_message) from e
 
                 if response.status_code not in [200, 201]:
                     raise IOError(
@@ -84,13 +84,10 @@ def upload(file: UploadFile = File(...)):
                 # DTodo: create new keycloak role with the name of the issue
                 # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
                 # DTodo: set the color code in the settings of the augustin backend # noqa: E501
-                # if category.strip() == "augustiner:in":
-                #     # extract einsicht article text from file
-                #     response = extract_page(save_path_for_pdf, category)
 
         except IOError as e:
             traceback.print_exc()
-            error_message = f"Error extracting: {e}"
+            error_message = f"Final error catchment: {e}"
             raise IOError(error_message) from e
 
     return {

@@ -2,6 +2,7 @@
 import base64
 import json
 import os
+import traceback
 
 import requests
 from dotenv import load_dotenv
@@ -67,7 +68,13 @@ def check_for_category(category):
 
     header = generate_auth_header()
 
-    response = requests.get(url, headers=header, timeout=5)
+    # Try receiving the categories with exception handling
+    try:
+        response = requests.get(url, headers=header, timeout=5)
+    except IOError as e:
+        traceback.print_exc()
+        error_message = f"WPLocal not running? Error receiving a get request: {e}"
+        raise IOError(error_message) from e
 
     if response.status_code not in (200, 201):
         raise HTTPException(
