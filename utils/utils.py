@@ -134,12 +134,10 @@ class PluginUtility:
         """Identify the category of the page."""
         rect = fitz.Rect(60, 30, 200, 60)
         if i % 2 == 0:
-            rect = fitz.Rect(450, 55, 580, 350)
+            rect = fitz.Rect(400, 30, 580, 60)
         left, top, right, bottom = rect
         if self.debug:
-            pix = page.get_pixmap(clip=(left, top, right, bottom))
-            pix.save(f"page-{page.number}-category_side.png")
-        if self.debug:
+            # Save the image to the new directory
             pix = page.get_pixmap(clip=(left, top, right, bottom))
             name_png = f"{path_to_new_directory}page-{page.number}-category.png"
             pix.save(name_png)
