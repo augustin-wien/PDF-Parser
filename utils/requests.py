@@ -54,8 +54,21 @@ def upload_image(image_path, image_title):
         )
 
     image_id = json.loads(response.content)["id"]
+    try:
+        src = json.loads(response.content)["media_details"]["sizes"]["full"][
+            "source_url"
+        ]
+    except KeyError as e:
+        print("Error extracting image source url in first option: ", e)
 
-    return image_id
+    try:
+        src = json.loads(response.content)["source_url"]
+    except KeyError as e:
+        traceback.print_exc()
+        error_message = f"Error extracting image source url: {e}"
+        raise IOError(error_message) from e
+
+    return image_id, src
 
 
 def check_for_category(category):

@@ -5,6 +5,7 @@ import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 from utils import requests
+from utils.image_parser import get_all_images
 from utils.text_parser import create_meta_information, get_raw_text
 from utils.utils import PluginUtility
 
@@ -52,14 +53,45 @@ def upload(file: UploadFile = File(...)):
                 if index == 0:
                     continue
 
-                category = plugin_utility.identify_category(
-                    page, index, path_to_new_directory
-                )
-                categories.append(category)
+                # Identify category of page
+                try:
+                    category = plugin_utility.identify_category(
+                        page, index, path_to_new_directory
+                    )
+                    categories.append(category)
+                except IOError as e:
+                    traceback.print_exc()
+                    error_message = f"Error identifying category: {e}"
+                    raise IOError(error_message) from e
 
-                # Try extracting raw text from page with exception handling
+                # Extract and upload images from page with exception handling
+                try:
+                    number_of_images = get_all_images(
+                        page, index, src, path_to_new_directory
+                    )
+                    image_text = ""
+
+                    for image_index in range(number_of_images + 1):
+                        image_filename = (
+                            f"{path_to_new_directory}page_{index}_img_{image_index}.png"
+                        )
+                        image_id, image_src = requests.upload_image(
+                            image_filename, f"page_{index}_img_{image_index}.png"
+                        )
+                        image_text += f"""
+                            <!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
+                            <figure class="wp-block-image size-full"><img src="{image_src}"
+                            alt="" class="wp-image-{image_id}"/></figure><!-- /wp:image -->"""
+
+                except IOError as e:
+                    traceback.print_exc()
+                    error_message = f"Error extracting and uploading images: {e}"
+                    raise IOError(error_message) from e
+
+                # Extract raw text from page with exception handling
                 try:
                     raw_text = get_raw_text(page)
+                    raw_text += image_text
                 except IOError as e:
                     traceback.print_exc()
                     error_message = f"Error extracting raw text: {e}"
@@ -84,7 +116,7 @@ def upload(file: UploadFile = File(...)):
                 # DTodo: create new keycloak role with the name of the issue
                 # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
                 # DTodo: set the color code in the settings of the augustin backend # noqa: E501
-
+            src.close()
         except IOError as e:
             traceback.print_exc()
             error_message = f"Final error catchment: {e}"
