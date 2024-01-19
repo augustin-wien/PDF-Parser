@@ -7,7 +7,7 @@ from utils.requests import upload_image
 
 
 class PluginUtility:
-    """Common utility functions for the plugin."""
+    """Class for common utility functions for the plugin."""
 
     def __init__(self):
         load_dotenv()
@@ -141,7 +141,57 @@ class PluginUtility:
             pix = page.get_pixmap(clip=(left, top, right, bottom))
             name_png = f"{path_to_new_directory}page-{page.number}-category.png"
             pix.save(name_png)
+
+        # Check if the category is in the rect on top
+        text_in_rect = self._check_for_word_in_rect(page, rect, path_to_new_directory)
+
+        # If no text was found in the rect, try to find the category on the side
+        if text_in_rect == "":
+            rect = fitz.Rect(10, 55, 80, 450)
+            if i % 2 == 0:
+                rect = fitz.Rect(450, 55, 580, 350)
+            text_in_rect = self._check_for_word_in_rect(
+                page, rect, path_to_new_directory, True
+            )
+
+        # Last check if no text was found
+        if text_in_rect == "":
+            # probably full site advertisement
+            text_in_rect = "Keine Kategorie gefunden"
+
+        # Convert to downcase
+        text_in_rect = text_in_rect.lower()
+
+        # First page has a different structure
+        if "editorial" in text_in_rect:
+            text_in_rect = "editorial"
+
+        return text_in_rect
+
+    def _check_for_word_in_rect(
+        self, page, rect, path_to_new_directory, debug_image_name=False
+    ) -> str:
+        """Check if a word is in the rect."""
+        left, top, right, bottom = rect
         text_in_rect = ""
+
+        # Debug images for each page and category
+        if self.debug:
+            pix = page.get_pixmap(
+                clip=(
+                    left,
+                    top,
+                    right,
+                    bottom,
+                )
+            )
+            pix = page.get_pixmap(clip=(left, top, right, bottom))
+
+            if debug_image_name:
+                pix.save(f"{path_to_new_directory}page-{page.number}-category_side.png")
+            else:
+                pix.save(f"{path_to_new_directory}page-{page.number}-category.png")
+
         for word in page.get_text("words"):
             x0, y0, x1, y1, text = word[:5]
             if (
@@ -151,34 +201,8 @@ class PluginUtility:
                 and top <= y1 <= bottom
             ):
                 text_in_rect += text + " "
-        if text_in_rect == "":
-            # maybe the category is on the side
-            rect = fitz.Rect(10, 55, 80, 450)
-            if i % 2 == 0:
-                rect = fitz.Rect(450, 55, 580, 350)
-            left, top, right, bottom = rect
-            if self.debug:
-                pix = page.get_pixmap(clip=(left, top, right, bottom))
-                name_png = (
-                    f"{path_to_new_directory}page-{page.number}-category_side.png"
-                )
-                pix.save(name_png)
-            for word in page.get_text("words"):
-                x0, y0, x1, y1, text = word[:5]
-                if (
-                    left <= x0 <= right
-                    and top <= y0 <= bottom
-                    and left <= x1 <= right
-                    and top <= y1 <= bottom
-                ):
-                    text_in_rect += text + " "
-        if text_in_rect == "":
-            text_in_rect = "Keine Kategorie gefunden"  # propably full site advertisement # noqa: E501
-        # convert to downcase
-        text_in_rect = text_in_rect.lower()
-        # first page has a different structure
-        if "editorial" in text_in_rect:
-            text_in_rect = "editorial"
+
+        text_in_rect = text_in_rect.strip()
 
         return text_in_rect
 
