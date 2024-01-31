@@ -45,6 +45,7 @@ jobs:
       - name: Install dependencies for black
         run: |
           pip install black
+          pip install "black[jupyter]"
       - name: Format the code with black
         run: |
           black --check .
