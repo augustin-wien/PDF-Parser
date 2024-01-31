@@ -46,9 +46,9 @@ jobs:
         run: |
           pip install black
           pip install "black[jupyter]"
-      - name: Format the code with black
-        run: |
-          black --check .
       - name: Print current Black version
         run: |
           black --version
+      - name: Format the code with black
+        run: |
+          black --check .
