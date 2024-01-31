@@ -1,4 +1,5 @@
 """Extracts the text from the cover page of the PDF file."""
+
 # Import necessary libraries
 
 import os

@@ -1,4 +1,5 @@
 """Playground for uploading several images with Wordpress API."""
+
 import json
 import os
 

@@ -1,4 +1,5 @@
 """Common utility functions for the plugin."""
+
 import os
 
 import fitz
