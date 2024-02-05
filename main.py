@@ -1,13 +1,12 @@
 """Main function of the FastAPI application."""
 
+import os
 import traceback
 
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
-from utils import requests
-from utils.image_parser import get_all_images
-from utils.text_parser import create_meta_information, get_raw_text
+from utils.parser import parse_image, parse_page
 from utils.utils import PluginUtility
 
 app = FastAPI()
@@ -25,57 +24,6 @@ async def main():
     </body>
     """
     return HTMLResponse(content=content)
-
-
-def parse_page(index, page, src, path_to_new_directory, category):
-    """Parse a single page of a PDF file and upload it to the Wordpress backend."""
-
-    # Extract and upload images from page with exception handling
-    try:
-        number_of_images = get_all_images(page, index, src, path_to_new_directory)
-        image_text = ""
-
-        for image_index in range(number_of_images + 1):
-            image_filename = (
-                f"{path_to_new_directory}page_{index}_img_{image_index}.png"
-            )
-            image_id, image_src = requests.upload_image(
-                image_filename, f"page_{index}_img_{image_index}.png"
-            )
-            image_text += f"""
-                <!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
-                <figure class="wp-block-image size-full"><img src="{image_src}"
-                alt="" class="wp-image-{image_id}"/></figure><!-- /wp:image -->"""
-
-    except IOError as e:
-        traceback.print_exc()
-        error_message = f"Error extracting and uploading images: {e}"
-        raise IOError(error_message) from e
-
-    # Extract raw text from page with exception handling
-    try:
-        raw_text = get_raw_text(page)
-        raw_text += image_text
-    except IOError as e:
-        traceback.print_exc()
-        error_message = f"Error extracting raw text: {e}"
-        raise IOError(error_message) from e
-
-    # Try posting raw text and category to Wordpress backend with exception handling
-    try:
-        meta_information = create_meta_information(category)
-        response = requests.upload_post(meta_information, raw_text, "")
-    except IOError as e:
-        traceback.print_exc()
-        error_message = (
-            f"WPLocal not running? No connection established uploading from main: {e}"
-        )
-        raise IOError(error_message) from e
-
-    if response.status_code not in [200, 201]:
-        raise IOError(
-            f"Error posting to Wordpress: {response.content} with status code {response.status_code}"
-        )
 
 
 @app.post("/upload")
@@ -116,7 +64,15 @@ def upload(file: UploadFile = File(...)):
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
 
-                parse_page(index, page, src, path_to_new_directory, category)
+                number_of_images, image_id, image_text = parse_image(
+                    page, src, index, path_to_new_directory
+                )
+
+                if number_of_images == 0:
+                    # Get sample image_id from env file
+                    image_id = os.environ.get("SAMPLE_IMAGE_ID")
+
+                parse_page(page, category, image_text, image_id)
 
                 # DTodo: create post with type papers and the name of the issue # noqa: E501
                 # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
