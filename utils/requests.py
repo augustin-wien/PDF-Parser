@@ -122,13 +122,14 @@ def upload_post(meta_information, readable_text, image_id):
         "title": meta_information["title"],
         "status": "publish",
         # WIP: Remove image_id once the image is uploaded to the media library
-        "content": readable_text + image_id,
+        "content": readable_text,
         "excerpt": meta_information["author"]
         + " "
         + meta_information["photograph"]
         + " "
         + meta_information["protocol"],
         "post_type": "articles",
+        "featured_media": image_id,
         "categories": [category_number],
     }
 
