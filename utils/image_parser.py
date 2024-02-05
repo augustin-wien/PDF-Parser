@@ -1,6 +1,5 @@
 """Parsing functions to extract images from each PDF page."""
 
-
 import os
 
 from dotenv import load_dotenv
