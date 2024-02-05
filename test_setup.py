@@ -1,4 +1,5 @@
 """Sets up the test environment."""
+
 import os
 
 from dotenv import load_dotenv

@@ -1,4 +1,5 @@
 """Main function of the FastAPI application."""
+
 import traceback
 
 import fitz

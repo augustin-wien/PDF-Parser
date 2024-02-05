@@ -1,4 +1,5 @@
 """Common utility functions for the plugin."""
+
 import os
 
 import fitz
@@ -135,19 +136,23 @@ class PluginUtility:
         rect = fitz.Rect(60, 30, 200, 60)
         if i % 2 == 0:
             rect = fitz.Rect(400, 30, 580, 60)
+        left, top, right, bottom = rect
+        if self.debug:
+            # Save the image to the new directory
+            pix = page.get_pixmap(clip=(left, top, right, bottom))
+            name_png = f"{path_to_new_directory}page-{page.number}-category.png"
+            pix.save(name_png)
 
-        text_in_rect = ""
-        text_in_rect = self._check_for_word_in_rect(
-            text_in_rect, page, rect, path_to_new_directory
-        )
+        # Check if the category is in the rect on top
+        text_in_rect = self._check_for_word_in_rect(page, rect, path_to_new_directory)
 
-        # if no text was found in the rect, try to find the category on the side
+        # If no text was found in the rect, try to find the category on the side
         if text_in_rect == "":
             rect = fitz.Rect(10, 55, 80, 450)
             if i % 2 == 0:
                 rect = fitz.Rect(450, 55, 580, 350)
             text_in_rect = self._check_for_word_in_rect(
-                text_in_rect, page, rect, path_to_new_directory, True
+                page, rect, path_to_new_directory, True
             )
 
         # Last check if no text was found
@@ -165,10 +170,11 @@ class PluginUtility:
         return text_in_rect
 
     def _check_for_word_in_rect(
-        self, text_in_rect, page, rect, path_to_new_directory, side_check=False
+        self, page, rect, path_to_new_directory, debug_image_name=False
     ) -> str:
         """Check if a word is in the rect."""
         left, top, right, bottom = rect
+        text_in_rect = ""
 
         # Debug images for each page and category
         if self.debug:
@@ -182,7 +188,7 @@ class PluginUtility:
             )
             pix = page.get_pixmap(clip=(left, top, right, bottom))
 
-            if side_check:
+            if debug_image_name:
                 pix.save(f"{path_to_new_directory}page-{page.number}-category_side.png")
             else:
                 pix.save(f"{path_to_new_directory}page-{page.number}-category.png")
