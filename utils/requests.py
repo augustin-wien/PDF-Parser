@@ -3,6 +3,7 @@
 import base64
 import json
 import os
+import traceback
 
 import requests
 from dotenv import load_dotenv
@@ -54,8 +55,21 @@ def upload_image(image_path, image_title):
         )
 
     image_id = json.loads(response.content)["id"]
+    try:
+        src = json.loads(response.content)["media_details"]["sizes"]["full"][
+            "source_url"
+        ]
+    except KeyError as e:
+        print("Error extracting image source url in first option: ", e)
 
-    return image_id
+    try:
+        src = json.loads(response.content)["source_url"]
+    except KeyError as e:
+        traceback.print_exc()
+        error_message = f"Error extracting image source url: {e}"
+        raise IOError(error_message) from e
+
+    return image_id, src
 
 
 def check_for_category(category):
@@ -64,11 +78,17 @@ def check_for_category(category):
     Return Uncategorized if not.
     """
 
-    url = global_url + "categories"
+    url = global_url + "categories?per_page=100"
 
     header = generate_auth_header()
 
-    response = requests.get(url, headers=header, timeout=5)
+    # Try receiving the categories with exception handling
+    try:
+        response = requests.get(url, headers=header, timeout=5)
+    except IOError as e:
+        traceback.print_exc()
+        error_message = f"WPLocal not running? Error receiving a get request: {e}"
+        raise IOError(error_message) from e
 
     if response.status_code not in (200, 201):
         raise HTTPException(
@@ -81,6 +101,8 @@ def check_for_category(category):
     category_list = json.loads(response.content)
 
     for cat in category_list:
+        if category == "tun & lassen" and cat["name"].strip() == "tun &amp; lassen":
+            return cat["id"]
         if cat["name"].strip() == category.strip():
             return cat["id"]
 
@@ -99,6 +121,7 @@ def upload_post(meta_information, readable_text, image_id):
     post = {
         "title": meta_information["title"],
         "status": "publish",
+        # WIP: Remove image_id once the image is uploaded to the media library
         "content": readable_text,
         "excerpt": meta_information["author"]
         + " "

@@ -1,10 +1,12 @@
 """Main function of the FastAPI application."""
 
+import os
 import traceback
 
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
+from utils.parser import parse_image, parse_page
 from utils.utils import PluginUtility
 
 app = FastAPI()
@@ -51,22 +53,36 @@ def upload(file: UploadFile = File(...)):
                 if index == 0:
                     continue
 
-                category = plugin_utility.identify_category(
-                    page, index, path_to_new_directory
+                # Identify category of page
+                try:
+                    category = plugin_utility.identify_category(
+                        page, index, path_to_new_directory
+                    )
+                    categories.append(category)
+                except IOError as e:
+                    traceback.print_exc()
+                    error_message = f"Error identifying category: {e}"
+                    raise IOError(error_message) from e
+
+                number_of_images, image_id, image_text = parse_image(
+                    page, src, index, path_to_new_directory
                 )
-                categories.append(category)
+
+                if number_of_images == 0:
+                    # Get sample image_id from env file
+                    image_id = os.environ.get("SAMPLE_IMAGE_ID")
+
+                parse_page(page, category, image_text, image_id)
+
                 # DTodo: create post with type papers and the name of the issue # noqa: E501
                 # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
                 # DTodo: create new keycloak role with the name of the issue
                 # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
                 # DTodo: set the color code in the settings of the augustin backend # noqa: E501
-                # if category.strip() == "augustiner:in":
-                #     # extract einsicht article text from file
-                #     response = extract_page(save_path_for_pdf, category)
-
+            src.close()
         except IOError as e:
             traceback.print_exc()
-            error_message = f"Error extracting: {e}"
+            error_message = f"Final error catchment: {e}"
             raise IOError(error_message) from e
 
     return {
