@@ -41,11 +41,45 @@ def create_meta_information(category):
     return meta_information
 
 
+def extract_headlines(page):
+    """Extract headlines from a PDF page."""
+    headlines = []
+
+    text_instances = page.get_text("dict")["blocks"]
+
+    if not text_instances:
+        return headlines
+
+    # print(f"Extracting headline: Text_instances {text_instances}")
+    for text in text_instances:
+        try:
+            for line in text["lines"]:
+                for span in line["spans"]:
+                    font_size = span["size"]
+
+                    # Check if font is bold and font size is larger than a threshold
+                    if "bold" in span["font"].lower() and font_size > 12:
+                        print(f"Extracting headline: {span['text']}")
+                        headlines.append(span["text"].strip())
+        except KeyError:
+            pass
+
+    return headlines
+
+
 # Function returns all the text from the given PDF page
 def get_raw_text(page):
     """Get the raw text from the PDF page."""
     # get raw text from page
     raw_text = page.get_text()
+
+    # 1. Step: Check for headline
+    extract_headlines(page)
+
+    # 2. Step: Check for ending symbol (e.g. ■)
+
+    # 3. Step: Save text into variable from header to ending symbol
+
     return raw_text
 
 
