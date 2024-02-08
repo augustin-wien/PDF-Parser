@@ -44,43 +44,81 @@ def create_meta_information(category):
 def extract_headlines(page):
     """Extract headlines from a PDF page."""
     headlines = []
-
-    text_instances = page.get_text("dict")["blocks"]
+    starting_characters = []
+    ending_symbols = 0
+    text_instances = page.get_text("dict", sort=True)["blocks"]
 
     if not text_instances:
         return headlines
 
-    # print(f"Extracting headline: Text_instances {text_instances}")
     for text in text_instances:
         try:
             for line in text["lines"]:
                 for span in line["spans"]:
                     font_size = span["size"]
+                    colour_code = f"#{span['color']:06x}"
 
-                    # Check if font is bold and font size is larger than a threshold
-                    if "bold" in span["font"].lower() and font_size > 12:
+                    # Check if colour code is not black or dark brown since starting characters have version colour
+                    if colour_code != "#2e2013" and colour_code != "#000000":
+                        # ------ Starting characters check ------
+                        # Check if text is not a number, has less than 3 characters and is not ending character
+                        if (
+                            not span["text"].isdigit()
+                            and len(span["text"]) < 3
+                            and span["text"] != "■"
+                        ):
+                            print(f"Extracting starting character: {span['text']}")
+                            starting_characters.append(span["text"].strip())
+                        # ------ Ending symbol check ------
+                        elif "■" in span["text"]:
+                            print(f"Extracting ending symbol: {span['text']}")
+                            ending_symbols += 1
+
+                    # ------ Header check ------
+                    # Check if font is bold and font size is larger 12
+                    elif (
+                        "bold" in span["font"].lower()
+                        and font_size > 12
+                        and span["font"] == "AmasisMTStd-Bold"
+                    ):
                         print(f"Extracting headline: {span['text']}")
                         headlines.append(span["text"].strip())
+
         except KeyError:
             pass
 
-    return headlines
+    return headlines, starting_characters, ending_symbols
 
 
 # Function returns all the text from the given PDF page
-def get_raw_text(page):
+def extract_text(page):
     """Get the raw text from the PDF page."""
     # get raw text from page
     raw_text = page.get_text()
 
-    # 1. Step: Check for headline
-    extract_headlines(page)
+    # 1. Step: Check for headline and starting characters
+    headlines, starting_characters, ending_symbols = extract_headlines(page)
 
-    # 2. Step: Check for ending symbol (e.g. ■)
+    # 2. Step: Check for all options
+    article = ""
+    # 2.1 Option: Exactly one story on page
+    if len(headlines) == 1 and len(starting_characters) == 1 and ending_symbols == 1:
+        # Iterate through all lines and extract article text
+        found_starting_character = False
+        for line in raw_text.split("\n"):
+            if found_starting_character:
+                if "■" in line:
+                    print(f"Found ending symbol: {line}")
+                    break
+                article += line
+            if starting_characters[0] == line:
+                print(f"Found starting character: {line}")
+                article += line.split(starting_characters[0])[1]
+                found_starting_character = True
 
     # 3. Step: Save text into variable from header to ending symbol
 
-    return raw_text
+    return raw_text, article
 
 
 def parse_image(page, src, index, path_to_new_directory):
@@ -124,8 +162,7 @@ def parse_page(page, category, image_text, image_id):
 
     # Extract raw text from page with exception handling
     try:
-        raw_text = get_raw_text(page)
-        raw_text += image_text
+        raw_text, article = extract_text(page)
     except IOError as e:
         traceback.print_exc()
         error_message = f"Error extracting raw text: {e}"
@@ -134,6 +171,15 @@ def parse_page(page, category, image_text, image_id):
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
         meta_information = create_meta_information(category)
+
+        # If article is not empty, set raw_text to article
+        if not article:
+            raw_text = article
+
+        # Append image_text to raw_text
+        raw_text += image_text
+
+        # Post to Wordpress
         response = requests.upload_post(meta_information, raw_text, image_id)
     except IOError as e:
         traceback.print_exc()

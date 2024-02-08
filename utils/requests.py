@@ -60,13 +60,13 @@ def upload_image(image_path, image_title):
             "source_url"
         ]
     except KeyError as e:
-        print("Error extracting image source url in first option: ", e)
+        print("Ignorable Error extracting image source url in first option: ", e)
 
     try:
         src = json.loads(response.content)["source_url"]
     except KeyError as e:
         traceback.print_exc()
-        error_message = f"Error extracting image source url: {e}"
+        error_message = f"No image source url found: {e}"
         raise IOError(error_message) from e
 
     return image_id, src
