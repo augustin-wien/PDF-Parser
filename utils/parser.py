@@ -29,16 +29,30 @@ def get_all_images(page, index, src, path_to_new_directory):
 
 
 # Function creates meta information for the post
-def create_meta_information(category):
+def create_meta_information(category, headline=None):
     """Create meta information for the post."""
+    # If headline is not given, use category as title
+    headline_or_category = headline if headline else category
     meta_information = {
         "protocol": "",
         "photograph": "",
-        "title": category,
+        "title": headline_or_category,
         "author": "",
         "category": category,
     }
     return meta_information
+
+
+def clean_text(article):
+    """Clean the text from unwanted newlines and hyphens."""
+    # Format the string
+    article = list(article)
+    article_edit = article
+    for index, letter in enumerate(article):
+        if " " in letter and " " in article[index - 1]:
+            del article_edit[index]
+
+    return "".join(article_edit)
 
 
 def extract_headlines(page):
@@ -79,9 +93,9 @@ def extract_headlines(page):
                     elif (
                         "bold" in span["font"].lower()
                         and font_size > 12
-                        and span["font"] == "AmasisMTStd-Bold"
+                        or font_size > 15
+                        or span["font"] == "AmasisMTStd-Bold"
                     ):
-                        print(f"Extracting headline: {span['text']}")
                         headlines.append(span["text"].strip())
 
         except KeyError:
@@ -100,25 +114,51 @@ def extract_text(page):
     headlines, starting_characters, ending_symbols = extract_headlines(page)
 
     # 2. Step: Check for all options
-    article = ""
+    article, headline = "", ""
     # 2.1 Option: Exactly one story on page
-    if len(headlines) == 1 and len(starting_characters) == 1 and ending_symbols == 1:
+    print(
+        f"""Length of headlines: {len(headlines)},
+        starting characters: {len(starting_characters)},
+        ending symbols: {ending_symbols}"""
+    )
+    if len(headlines) >= 1 and len(starting_characters) >= 1 and ending_symbols == 1:
         # Iterate through all lines and extract article text
         found_starting_character = False
+
+        # Join all headlines to one string
+        headline = " ".join(headlines)
+
         for line in raw_text.split("\n"):
             if found_starting_character:
                 if "■" in line:
-                    print(f"Found ending symbol: {line}")
+                    found_starting_character = False
                     break
+                # Clean text from unwanted hyphens and add newlines, if line is not empty
+                if line:
+                    # If in the end of line is "." or "!" or "?" or ":" keep newline
+                    if line[-1] in [".", "!", "?", ":"]:
+                        print(f"Article before ending symbol: {article}")
+                        print(f"Found line with ending symbol: {line}")
+                        article += line + "\n"
+                        print(f"Article after ending symbol: {article}")
+                        continue
+                    # If in the end of line is "-" delete hyphen and extra space before it
+                    elif line and line[-1] == "-":
+                        print(f"Article before hyphen: {article}")
+                        print(f"Found line with hyphen: {line}")
+                        article += line[:-1]
+                        print(f"Article after hyphen: {article}")
+                        continue
+                # If no checks are met, add line to article
                 article += line
+            # Start extracting article text with first starting character
             if starting_characters[0] == line:
-                print(f"Found starting character: {line}")
-                article += line.split(starting_characters[0])[1]
+                article += line
                 found_starting_character = True
 
     # 3. Step: Save text into variable from header to ending symbol
 
-    return raw_text, article
+    return raw_text, article, headline
 
 
 def parse_image(page, src, index, path_to_new_directory):
@@ -162,7 +202,7 @@ def parse_page(page, category, image_text, image_id):
 
     # Extract raw text from page with exception handling
     try:
-        raw_text, article = extract_text(page)
+        raw_text, article, headline = extract_text(page)
     except IOError as e:
         traceback.print_exc()
         error_message = f"Error extracting raw text: {e}"
@@ -170,10 +210,11 @@ def parse_page(page, category, image_text, image_id):
 
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
-        meta_information = create_meta_information(category)
+        meta_information = create_meta_information(category, headline)
 
         # If article is not empty, set raw_text to article
-        if not article:
+        if article:
+            article = clean_text(article)
             raw_text = article
 
         # Append image_text to raw_text
