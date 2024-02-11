@@ -59,9 +59,8 @@ def upload_image(image_path, image_title):
         src = json.loads(response.content)["media_details"]["sizes"]["full"][
             "source_url"
         ]
-    except KeyError as e:
-        print("Ignorable Error extracting image source url in first option: ", e)
-
+    except KeyError:
+        pass
     try:
         src = json.loads(response.content)["source_url"]
     except KeyError as e:
