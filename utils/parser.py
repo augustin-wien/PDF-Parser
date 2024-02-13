@@ -78,13 +78,15 @@ def clean_text(raw_text, starting_characters):
     return "".join(article_edit)
 
 
-def extract_headlines(page, starting_characters=None, headlines=None):
+def extract_headlines(
+    page, starting_characters=None, headlines=None, searching_for_end=False
+):
     """Extract headlines from a PDF page."""
     ending_symbols = 0
     text_instances = page.get_text("dict", sort=True)["blocks"]
 
     if not text_instances:
-        return headlines
+        return headlines, starting_characters, ending_symbols
 
     for text in text_instances:
         try:
@@ -103,7 +105,10 @@ def extract_headlines(page, starting_characters=None, headlines=None):
                             and span["text"] != "■"
                         ):
                             print(f"Extracting starting character: {span['text']}")
-                            starting_characters.append(span["text"].strip())
+                            if starting_characters is None:
+                                starting_characters = []
+                            if not searching_for_end:
+                                starting_characters.append(span["text"].strip())
                         # ------ Ending symbol check ------
                         elif "■" in span["text"]:
                             print(f"Extracting ending symbol: {span['text']}")
@@ -111,13 +116,12 @@ def extract_headlines(page, starting_characters=None, headlines=None):
 
                     # ------ Header check ------
                     # Check if font is bold and font size is larger 12
-                    elif (
-                        "bold" in span["font"].lower()
-                        and font_size > 12
-                        or font_size > 15
-                        or span["font"] == "AmasisMTStd-Bold"
-                    ):
-                        headlines.append(span["text"].strip())
+                    elif font_size > 12 or span["font"] == "AmasisMTStd-Bold":
+                        print(f"Extracting headline: {span['text'].strip()}")
+                        if headlines is None:
+                            headlines = []
+                        if not searching_for_end:
+                            headlines.append(span["text"].strip())
 
         except KeyError:
             pass
@@ -126,43 +130,56 @@ def extract_headlines(page, starting_characters=None, headlines=None):
 
 
 # Function returns all the text from the given PDF page
-def extract_text(page, starting_characters=None, headlines=None):
+def extract_text(
+    page,
+    previous_raw_text=None,
+    starting_characters=None,
+    headlines=None,
+    looking_for_end=False,
+):
     """Get the raw text from the PDF page."""
     # get raw text from page
     raw_text = page.get_text()
+    new_raw_text = (
+        raw_text if previous_raw_text is None else previous_raw_text + " " + raw_text
+    )
 
     # 1. Step: Check for headline and starting characters
     headlines, starting_characters, ending_symbols = extract_headlines(
-        page, starting_characters, headlines
+        page, starting_characters, headlines, looking_for_end
     )
 
-    # 2. Step: Check for all options
-    article, headline = "", ""
-    # 2.1 Option: Exactly one story on page
-    print(
-        f"""Length of headlines: {len(headlines)},
-        starting characters: {len(starting_characters)},
-        ending symbols: {ending_symbols}"""
-    )
+    article = ""
+    if headlines and starting_characters:
+        print(
+            f"""
+            Length of headlines: {len(headlines)}, headlines: {headlines},
+            starting characters: {len(starting_characters)}, starting characters: {starting_characters},
+            ending symbols: {ending_symbols}
+            """
+        )
 
-    # Check if article starts on page but ne ending symbol is found i.e. ends on next page
-    if len(headlines) >= 1 and len(starting_characters) >= 1:
-        # Join all headlines to one string
-        headline = " ".join(headlines)
-
-        if ending_symbols == 0:
+        # 2. Step Check if article starts on page but no ending symbol is found i.e. ends on next page
+        if (
+            len(headlines) >= 1
+            and len(starting_characters) >= 1
+            and ending_symbols == 0
+        ):
             print("Article starts on page but ends on next page")
-            return raw_text, article, headline, starting_characters
-        # Check if exactly one article is found on page
-        elif ending_symbols == 1:
-            print("Exactly one article found on page")
+        else:
+            # If ending symbol is found, clean raw text to readable article
+            article = clean_text(
+                raw_text if previous_raw_text is None else new_raw_text,
+                starting_characters,
+            )
+            print("Succesfully extracted article")
 
-            # Iterate through all lines and extract article text
-            article = clean_text(raw_text, starting_characters)
-
-    # 3. Step: Save text into variable from header to ending symbol
-
-    return raw_text, article, headline, ""
+    return (
+        (raw_text if previous_raw_text is None else new_raw_text),
+        article,
+        headlines,
+        starting_characters,
+    )
 
 
 def parse_image(page, src, index, path_to_new_directory):
@@ -201,27 +218,46 @@ def parse_image(page, src, index, path_to_new_directory):
     return number_of_images, image_id, image_text
 
 
-def parse_page(page, category, image_text, image_id):
+def parse_page(page, category, image_text, image_id, index):
     """Parse a single page of a PDF file and upload it to the Wordpress backend."""
 
     # Extract raw text from page with exception handling
     try:
-        raw_text, article, headline, starting_characters = extract_text(page)
+        raw_text, article, headlines, starting_characters = extract_text(page)
     except IOError as e:
         traceback.print_exc()
         error_message = f"Error extracting raw text: {e}"
         raise IOError(error_message) from e
 
+    number_of_parsed_pages = 0
     # Extract text of several pages if story starts on one page and ends on another
-    while not article and headline and starting_characters:
-        try:
-            raw_text, article, headline, starting_characters = extract_text(
-                page, headline, starting_characters
+    # Set limit to maximum 10 pages if no ending symbol can be found
+    if not article and headlines and starting_characters:
+        for i in range(1, 11):
+            print(
+                f"Extracting text from next page, entering first for loop: {i} from PAGE {index}"
             )
-        except IOError as e:
-            traceback.print_exc()
-            error_message = f"Error extracting raw text: {e}"
-            raise IOError(error_message) from e
+            try:
+                raw_text, article, headlines, starting_characters = extract_text(
+                    page, raw_text, starting_characters, headlines, True
+                )
+            except IOError as e:
+                traceback.print_exc()
+                error_message = f"Error extracting raw text: {e}"
+                raise IOError(error_message) from e
+            if article:
+                number_of_parsed_pages = i
+                break
+            elif i == 9:
+                if headlines is None:
+                    headlines = []
+                headlines.append("Error: No ending symbol found")
+
+    # Since all headlines are given, join all headlines to one string
+    if headlines is None:
+        headlines = []
+    headlines.append(f"PAGE_{index}")
+    headline = " ".join(headlines)
 
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
@@ -247,3 +283,5 @@ def parse_page(page, category, image_text, image_id):
         raise IOError(
             f"Error posting to Wordpress: {response.content} with status code {response.status_code}"
         )
+
+    return number_of_parsed_pages

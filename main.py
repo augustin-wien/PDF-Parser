@@ -48,32 +48,42 @@ def upload(file: UploadFile = File(...)):
             src = fitz.open(save_path_for_pdf)
 
             categories = []
+            parsed_page_indices = set()
             for index, page in enumerate(src):
-                # skip first page
-                if index == 0:
-                    continue
 
-                # Identify category of page
-                try:
-                    category = plugin_utility.identify_category(
-                        page, index, path_to_new_directory
+                if index not in parsed_page_indices:
+
+                    # skip first page
+                    if index == 0:
+                        continue
+
+                    # Identify category of page
+                    try:
+                        category = plugin_utility.identify_category(
+                            page, index, path_to_new_directory
+                        )
+                        categories.append(category)
+                    except IOError as e:
+                        traceback.print_exc()
+                        error_message = f"Error identifying category: {e}"
+                        raise IOError(error_message) from e
+
+                    number_of_images, image_id, image_text = parse_image(
+                        page, src, index, path_to_new_directory
                     )
-                    categories.append(category)
-                except IOError as e:
-                    traceback.print_exc()
-                    error_message = f"Error identifying category: {e}"
-                    raise IOError(error_message) from e
 
-                number_of_images, image_id, image_text = parse_image(
-                    page, src, index, path_to_new_directory
-                )
+                    if number_of_images == 0:
+                        # Get sample image_id from env file
+                        image_id = os.environ.get("SAMPLE_IMAGE_ID")
 
-                if number_of_images == 0:
-                    # Get sample image_id from env file
-                    image_id = os.environ.get("SAMPLE_IMAGE_ID")
+                    number_of_parsed_pages = parse_page(
+                        page, category, image_text, image_id, index
+                    )
 
-                parse_page(page, category, image_text, image_id)
-
+                    # Update parsed_page_indices with the indices of the parsed pages
+                    parsed_page_indices.update(
+                        range(index, index + number_of_parsed_pages)
+                    )
                 # DTodo: create post with type papers and the name of the issue # noqa: E501
                 # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
                 # DTodo: create new keycloak role with the name of the issue
