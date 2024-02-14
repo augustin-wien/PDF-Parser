@@ -53,14 +53,24 @@ def clean_text(raw_text, starting_characters):
         if found_starting_character:
             # Clean text from unwanted hyphens and add newlines, if line is not empty
             if line:
-                # If in the end of line is "." or "!" or "?" or ":" keep newline
-                if line[-1] in [".", "!", "?", ":"]:
-                    article += line + "\n"
-                    continue
-                # If in the end of line is "-" delete hyphen and extra space before it
-                elif line and line[-1] == "-":
-                    article += line[:-1]
-                    continue
+                try:
+                    if line[-1] == " ":
+                        if line[-2] in [".", "!", "?", ":"]:
+                            article += line[:-1] + "\n"
+                            continue
+                        article += line
+                        continue
+                    # If in the end of line is "." or "!" or "?" or ":" keep newline
+                    if line[-1] in [".", "!", "?", ":"]:
+                        article += line + "\n"
+                        continue
+                    # If in the end of line is "-" delete hyphen and add line to article
+                    if line[-1] == "-":
+                        article += line[:-1]
+                        continue
+                except IndexError:
+                    pass
+
             # If no checks are met, add line to article
             article += line
         # Start extracting article text with first starting character
@@ -72,6 +82,8 @@ def clean_text(raw_text, starting_characters):
     article = list(article)
     article_edit = article
     for index, letter in enumerate(article):
+        if letter == "■":
+            del article_edit[index:]
         if " " in letter and " " in article[index - 1]:
             del article_edit[index]
 
@@ -96,7 +108,7 @@ def extract_headlines(
                     colour_code = f"#{span['color']:06x}"
 
                     # Check if colour code is not black or dark brown since starting characters have version colour
-                    if colour_code != "#2e2013" and colour_code != "#000000":
+                    if colour_code not in ("#2e2013", "#000000"):
                         # ------ Starting characters check ------
                         # Check if text is not a number, has less than 3 characters and is not ending character
                         if (
@@ -135,7 +147,7 @@ def extract_text(
     previous_raw_text=None,
     starting_characters=None,
     headlines=None,
-    looking_for_end=False,
+    searching_for_end=False,
 ):
     """Get the raw text from the PDF page."""
     # get raw text from page
@@ -146,7 +158,7 @@ def extract_text(
 
     # 1. Step: Check for headline and starting characters
     headlines, starting_characters, ending_symbols = extract_headlines(
-        page, starting_characters, headlines, looking_for_end
+        page, starting_characters, headlines, searching_for_end
     )
 
     article = ""
@@ -218,60 +230,52 @@ def parse_image(page, src, index, path_to_new_directory):
     return number_of_images, image_id, image_text
 
 
-def parse_page(page, category, image_text, image_id, index):
+def parse_page(page, meta_array):
     """Parse a single page of a PDF file and upload it to the Wordpress backend."""
 
     # Extract raw text from page with exception handling
     try:
-        raw_text, article, headlines, starting_characters = extract_text(page)
+        if meta_array["raw_text"]:
+            print("Extracting raw text with meta_array")
+            raw_text, article, headlines, starting_characters = extract_text(
+                page,
+                meta_array["raw_text"],
+                meta_array["starting_characters"],
+                meta_array["headlines"],
+                True,
+            )
+        else:
+            raw_text, article, headlines, starting_characters = extract_text(page)
     except IOError as e:
         traceback.print_exc()
         error_message = f"Error extracting raw text: {e}"
         raise IOError(error_message) from e
 
-    number_of_parsed_pages = 0
     # Extract text of several pages if story starts on one page and ends on another
     # Set limit to maximum 10 pages if no ending symbol can be found
     if not article and headlines and starting_characters:
-        for i in range(1, 11):
-            print(
-                f"Extracting text from next page, entering first for loop: {i} from PAGE {index}"
-            )
-            try:
-                raw_text, article, headlines, starting_characters = extract_text(
-                    page, raw_text, starting_characters, headlines, True
-                )
-            except IOError as e:
-                traceback.print_exc()
-                error_message = f"Error extracting raw text: {e}"
-                raise IOError(error_message) from e
-            if article:
-                number_of_parsed_pages = i
-                break
-            elif i == 9:
-                if headlines is None:
-                    headlines = []
-                headlines.append("Error: No ending symbol found")
+        return raw_text, headlines, starting_characters, True
 
     # Since all headlines are given, join all headlines to one string
     if headlines is None:
         headlines = []
-    headlines.append(f"PAGE_{index}")
     headline = " ".join(headlines)
 
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
-        meta_information = create_meta_information(category, headline)
+        meta_information = create_meta_information(meta_array["category"], headline)
 
         # If article is not empty, set raw_text to article
         if article:
             raw_text = article
 
         # Append image_text to raw_text
-        raw_text += image_text
+        raw_text += meta_array["image_text"]
 
         # Post to Wordpress
-        response = requests.upload_post(meta_information, raw_text, image_id)
+        response = requests.upload_post(
+            meta_information, raw_text, meta_array["image_id"]
+        )
     except IOError as e:
         traceback.print_exc()
         error_message = (
@@ -284,4 +288,4 @@ def parse_page(page, category, image_text, image_id, index):
             f"Error posting to Wordpress: {response.content} with status code {response.status_code}"
         )
 
-    return number_of_parsed_pages
+    return raw_text, headlines, starting_characters, False
