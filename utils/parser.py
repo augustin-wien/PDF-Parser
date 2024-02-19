@@ -51,32 +51,35 @@ def clean_text(raw_text, starting_characters):
 
     for line in raw_text.split("\n"):
         if found_starting_character:
+            # Skip empty lines
+            if not line.strip():
+                continue
+
             # Clean text from unwanted hyphens and add newlines, if line is not empty
-            if line:
-                try:
-                    if line[-1] == " ":
-                        if line[-2] in [".", "!", "?", ":"]:
-                            article += line[:-1] + "\n"
-                            continue
-                        article += line
+            try:
+                if line.endswith(" "):
+                    if line[-2] in [".", "!", "?", ":"]:
+                        article += line[:-1] + "\n"
                         continue
-                    # If in the end of line is "." or "!" or "?" or ":" keep newline
-                    if line[-1] in [".", "!", "?", ":"]:
-                        article += line + "\n"
-                        continue
-                    # If in the end of line is "-" delete hyphen and add line to article
-                    if line[-1] == "-":
-                        article += line[:-1]
-                        continue
-                except IndexError:
-                    pass
+                    article += line
+                    continue
+                # If in the end of line is "." or "!" or "?" or ":" keep newline
+                if line.endswith((".", "!", "?", ":")):
+                    article += line + "\n"
+                    continue
+                # If in the end of line is "-" delete hyphen and add line to article
+                if line[-1] == "-":
+                    article += line[:-1]
+                    continue
+            except IndexError:
+                pass
 
             # If no checks are met, add line to article
             article += line
-        # Start extracting article text with first starting character
+
         if starting_characters[0] == line:
-            article += line
             found_starting_character = True
+            article += line
 
     # Format the string
     article = list(article)
@@ -88,6 +91,54 @@ def clean_text(raw_text, starting_characters):
             del article_edit[index]
 
     return "".join(article_edit)
+
+
+def extract_starting_characters(
+    span, starting_characters=None, searching_for_end=False
+):
+    """Extract starting characters."""
+    if (
+        not span["text"].isdigit()
+        and len(span["text"]) < 3
+        and span["text"] != "■"
+        and not searching_for_end
+    ):
+        if starting_characters is None:
+            starting_characters = []
+        starting_characters.append(span["text"].strip())
+    return starting_characters
+
+
+def extract_ending_symbols(span, ending_symbols):
+    """Extract ending symbols."""
+    if "■" in span["text"]:
+        ending_symbols += 1
+    return ending_symbols
+
+
+def process_span(
+    span, starting_characters, ending_symbols, headlines, searching_for_end
+):
+    """Process a span."""
+    font_size = span["size"]
+    colour_code = f"#{span['color']:06x}"
+
+    # Check if colour code is not black or dark brown since starting characters have version colour
+    if colour_code not in ("#2e2013", "#000000"):
+        starting_characters = extract_starting_characters(
+            span, starting_characters, searching_for_end
+        )
+        ending_symbols = extract_ending_symbols(span, ending_symbols)
+
+    # ------ Header check ------
+    # Check if font is bold and font size is larger 12
+    if font_size > 12 or span["font"] == "AmasisMTStd-Bold":
+        if headlines is None:
+            headlines = []
+        if not searching_for_end:
+            headlines.append(span["text"].strip())
+
+    return starting_characters, ending_symbols, headlines
 
 
 def extract_headlines(
@@ -104,36 +155,13 @@ def extract_headlines(
         try:
             for line in text["lines"]:
                 for span in line["spans"]:
-                    font_size = span["size"]
-                    colour_code = f"#{span['color']:06x}"
-
-                    # Check if colour code is not black or dark brown since starting characters have version colour
-                    if colour_code not in ("#2e2013", "#000000"):
-                        # ------ Starting characters check ------
-                        # Check if text is not a number, has less than 3 characters and is not ending character
-                        if (
-                            not span["text"].isdigit()
-                            and len(span["text"]) < 3
-                            and span["text"] != "■"
-                        ):
-                            print(f"Extracting starting character: {span['text']}")
-                            if starting_characters is None:
-                                starting_characters = []
-                            if not searching_for_end:
-                                starting_characters.append(span["text"].strip())
-                        # ------ Ending symbol check ------
-                        elif "■" in span["text"]:
-                            print(f"Extracting ending symbol: {span['text']}")
-                            ending_symbols += 1
-
-                    # ------ Header check ------
-                    # Check if font is bold and font size is larger 12
-                    elif font_size > 12 or span["font"] == "AmasisMTStd-Bold":
-                        print(f"Extracting headline: {span['text'].strip()}")
-                        if headlines is None:
-                            headlines = []
-                        if not searching_for_end:
-                            headlines.append(span["text"].strip())
+                    starting_characters, ending_symbols, headlines = process_span(
+                        span,
+                        starting_characters,
+                        ending_symbols,
+                        headlines,
+                        searching_for_end,
+                    )
 
         except KeyError:
             pass
@@ -163,13 +191,6 @@ def extract_text(
 
     article = ""
     if headlines and starting_characters:
-        print(
-            f"""
-            Length of headlines: {len(headlines)}, headlines: {headlines},
-            starting characters: {len(starting_characters)}, starting characters: {starting_characters},
-            ending symbols: {ending_symbols}
-            """
-        )
 
         # 2. Step Check if article starts on page but no ending symbol is found i.e. ends on next page
         if (
@@ -177,14 +198,18 @@ def extract_text(
             and len(starting_characters) >= 1
             and ending_symbols == 0
         ):
-            print("Article starts on page but ends on next page")
-        else:
-            # If ending symbol is found, clean raw text to readable article
-            article = clean_text(
-                raw_text if previous_raw_text is None else new_raw_text,
+            return (
+                (raw_text if previous_raw_text is None else new_raw_text),
+                article,
+                headlines,
                 starting_characters,
             )
-            print("Succesfully extracted article")
+
+        # If ending symbol is found, clean raw text to readable article
+        article = clean_text(
+            raw_text if previous_raw_text is None else new_raw_text,
+            starting_characters,
+        )
 
     return (
         (raw_text if previous_raw_text is None else new_raw_text),
