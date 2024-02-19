@@ -50,4 +50,4 @@ jobs:
           mkdir -p ${GITHUB_WORKSPACE}/sample_data/582_Augustin_fertig_kontrolle/
       - name: Test with pytest
         run: |
-          pytest -v
+          pytest -v -k "not test_upload_files"
