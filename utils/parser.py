@@ -244,8 +244,7 @@ def parse_image(page, src, index, path_to_new_directory):
             if number_of_images == 1:
                 return number_of_images, image_id, image_text
 
-            image_text += f"""
-                <!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
+            image_text += f"""<!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
                 <figure class="wp-block-image size-full"><img src="{image_src}"
                 alt="" class="wp-image-{image_id}"/></figure><!-- /wp:image -->"""
 
@@ -257,7 +256,7 @@ def parse_image(page, src, index, path_to_new_directory):
     return number_of_images, image_id, image_text
 
 
-def parse_page(page, meta_array, src):
+def parse_page(page, meta_array, force_upload=False):
     """Parse a single page of a PDF file and upload it to the Wordpress backend."""
 
     # Extract raw text from page with exception handling
@@ -280,7 +279,7 @@ def parse_page(page, meta_array, src):
 
     # Extract text of several pages if story starts on one page and ends on another
     # Set limit to maximum 10 pages if no ending symbol can be found
-    if not article and headlines and starting_characters:
+    if not article and headlines and starting_characters and not force_upload:
         return raw_text, headlines, starting_characters, True
 
     # Since all headlines are given, join all headlines to one string
@@ -297,7 +296,7 @@ def parse_page(page, meta_array, src):
     else:
         headline = headlines[5]
 
-    waste = " ".join(headlines[4:])
+    waste = " ".join(headlines[2:])
 
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
@@ -307,7 +306,7 @@ def parse_page(page, meta_array, src):
 
         quote = '<!-- wp:quote -->\n<blockquote class="wp-block-quote">\n<!-- wp:paragraph -->\n<p>'+waste+'</p>\n<!-- /wp:paragraph --></blockquote>\n<!-- /wp:quote -->\n'
 
-        raw_text = quote + raw_text
+        raw_text = quote + "<!-- wp:paragraph -->\n" +raw_text+"\n<!-- /wp:paragraph -->\n"
         # If article is not empty, set raw_text to article
         if article:
             # put article in gutenberg block
