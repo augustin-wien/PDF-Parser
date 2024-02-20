@@ -7,7 +7,7 @@ import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 from utils.parser import parse_image, parse_page
-from utils.requests import check_for_papers_category, create_papers_category
+from utils.requests import check_for_papers_category, create_papers_category, save_page_as_image
 from utils.utils import PluginUtility
 
 app = FastAPI()
@@ -63,26 +63,14 @@ def upload(file: UploadFile = File(...)):
                 print(f"papers_category_id: {papers_category_id}")
 
             categories = []
-            meta_array = {
-                "category": 0,
-                "image_id": "",
-                "image_text": "",
-                "raw_text": "",
-                "headlines": [],
-                "starting_characters": [],
-                "category_papers": papers_category_id,  # ausgabennummer
-            }
-            print(f"meta_array: {meta_array}")
 
+            meta_array = initMetaArray(papers_category_id)
+            # identify category of each page
             for index, page in enumerate(src):
-
                 # skip first page
                 if index == 0:
                     continue
-                if index > 15:
-                    break
-                print(f"parse page {index} of {len(src)} pages.")
-                # Identify category of page
+
                 try:
                     category = plugin_utility.identify_category(
                         page, index, path_to_new_directory
@@ -93,6 +81,17 @@ def upload(file: UploadFile = File(...)):
                     traceback.print_exc()
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
+        
+
+            for index, page in enumerate(src):
+
+                # skip first page
+                if index == 0:
+                    continue
+
+                print(f"parse page {index} of {len(src)} pages.")
+                # Identify category of page
+                category = categories[index - 1]
                 print("category", category)
                 number_of_images, image_id, image_text = parse_image(
                     page, src, index, path_to_new_directory
@@ -103,14 +102,34 @@ def upload(file: UploadFile = File(...)):
                     image_id = os.environ.get("SAMPLE_IMAGE_ID")
 
                 meta_array["category"] = category
-                meta_array["image_id"] = image_id
                 meta_array["image_text"] = image_text
-                print("Entering parse page once meta_array:")
+
+                if category == "editorial":
+                    # Extract first page as image if category is editorial
+                    image_id = None
+                    try:
+                        image_id = save_page_as_image(0, src, path_to_new_directory)
+                        print("image_id for editorial", image_id)
+                    
+                    except IOError as e:
+                        traceback.print_exc()
+                        error_message = f"Error extracting and uploading images: {e}"
+                        raise IOError(error_message) from e
+
+                meta_array["image_id"] = image_id
+
+                # check if the next page has a different category to force the current page to be uploaded
+                next_page_category = categories[index] if index < len(categories) else None
+                print("next_page_category", next_page_category)
+
+                force_upload = False
+                if next_page_category and next_page_category != category:
+                    force_upload = True
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
-                    page, meta_array
+                    page, meta_array, force_upload
                 )
-                if next_page_needed:
+                if next_page_needed and not force_upload:
                     print("Next page needed")
                     # This case occurs when the page has its end on the next pages
                     meta_array["raw_text"] = " ".join(meta_array["raw_text"]) + raw_text
@@ -121,19 +140,8 @@ def upload(file: UploadFile = File(...)):
 
                 # This is the case when the page has been uploaded
                 print("Reset meta_array")
-                meta_array = {
-                    "category": 0,
-                    "image_id": "",
-                    "image_text": "",
-                    "index": 0,
-                    "raw_text": "",
-                    "headlines": [],
-                    "starting_characters": [],
-                    "category_papers": papers_category_id,  # ausgabennummer
-                }
+                meta_array = initMetaArray(papers_category_id)
 
-                # DTodo: create post with type papers and the name of the issue # noqa: E501
-                # DTodo: create new term in category "papers" with the name of the issue # noqa: E501
                 # DTodo: create new keycloak role with the name of the issue
                 # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
                 # DTodo: set the color code in the settings of the augustin backend # noqa: E501
@@ -147,3 +155,16 @@ def upload(file: UploadFile = File(...)):
         "message": f"Successfully uploaded {file.filename}",
         "categories": categories,
     }
+
+def initMetaArray(papers_category_id):
+    meta_array = {
+        "category": 0,
+        "image_id": "",
+        "image_text": "",
+        "raw_text": "",
+        "index": 0,
+        "headlines": [],
+        "starting_characters": [],
+        "category_papers": papers_category_id,  # ausgabennummer
+    }
+    return meta_array

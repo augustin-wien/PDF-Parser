@@ -1,6 +1,7 @@
 """Parsing functions to extract images and text from PDF."""
 
 import traceback
+import re
 
 from utils import requests
 
@@ -256,7 +257,7 @@ def parse_image(page, src, index, path_to_new_directory):
     return number_of_images, image_id, image_text
 
 
-def parse_page(page, meta_array):
+def parse_page(page, meta_array, src):
     """Parse a single page of a PDF file and upload it to the Wordpress backend."""
 
     # Extract raw text from page with exception handling
@@ -285,24 +286,49 @@ def parse_page(page, meta_array):
     # Since all headlines are given, join all headlines to one string
     if headlines is None:
         headlines = []
-    headline = " ".join(headlines)
+    # Skip the first two headlines since they are issue and page number
+    print("headlines: ",headlines[2])
+
+    headline = " ".join(headlines[2:])
+
+    # DTODO: write a headline detector
+    if meta_array["category"] == "editorial":
+        headline = headlines[2]
+    else:
+        headline = headlines[5]
+
+    waste = " ".join(headlines[4:])
 
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
+        print("parse_page headline: ",headline)
         meta_information = create_meta_information(meta_array["category"], headline)
         meta_information["category_papers"] = meta_array["category_papers"]
 
+        quote = '<!-- wp:quote -->\n<blockquote class="wp-block-quote">\n<!-- wp:paragraph -->\n<p>'+waste+'</p>\n<!-- /wp:paragraph --></blockquote>\n<!-- /wp:quote -->\n'
+
+        raw_text = quote + raw_text
         # If article is not empty, set raw_text to article
         if article:
-            raw_text = article
+            # put article in gutenberg block
+            article = "<!-- wp:paragraph -->\n<p>" + article + "</p>\n<!-- /wp:paragraph -->\n"
+            raw_text = quote + article
 
-        # Append image_text to raw_text
-        raw_text += meta_array["image_text"]
 
-        # Post to Wordpress
-        response = requests.upload_post(
-            meta_information, raw_text, meta_array["image_id"]
-        )
+        if meta_array["category"] == "editorial":
+            # Post to wordpress as newspaper (no need for images in editorial category)
+            response = requests.upload_paper(
+                meta_information, raw_text, meta_array["image_id"]
+            )
+        else:
+            # Append image_text to raw_text
+
+            raw_text += meta_array["image_text"]
+
+            # Post to wordpress as article
+            response = requests.upload_post(
+                meta_information, raw_text, meta_array["image_id"]
+            )
     except IOError as e:
         traceback.print_exc()
         error_message = (
