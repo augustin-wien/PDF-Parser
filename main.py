@@ -6,7 +6,8 @@ import traceback
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
-from utils.parser import parse_image, parse_page
+from utils.parser_augustin import parse_image, parse_page
+from utils.parser_strawanzerin import Strawanzerin
 from utils.utils import PluginUtility
 
 app = FastAPI()
@@ -91,5 +92,7 @@ def upload(file: UploadFile = File(...)):
                 raise IOError(error_message) from e
         else:
             print("Successfully uploaded strawanzerin file")
+            strawanzerin = Strawanzerin()
+            strawanzerin.parse_strawanzerin(save_path_for_pdf, path_to_new_directory)
 
     return {"message": f"Successfully uploaded {file.filename}"}

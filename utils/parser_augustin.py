@@ -1,4 +1,4 @@
-"""Parsing functions to extract images and text from PDF."""
+"""Parsing functions to extract images and text from augustin PDF file."""
 
 import traceback
 
