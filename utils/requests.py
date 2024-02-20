@@ -2,6 +2,7 @@
 
 import base64
 import json
+import re
 import os
 import traceback
 
@@ -121,7 +122,7 @@ def check_for_category(category):
 
 def check_for_papers_category(category):
     """
-    Check if the category exists and return it.
+    Check if the papers category exists and return it.
     Return Uncategorized if not.
     """
 
@@ -138,7 +139,7 @@ def check_for_papers_category(category):
         raise IOError(error_message) from e
 
     if response.status_code not in (200, 201):
-        print("check_for_papers_category:" + str(response.content))
+        print("check_for_papers_category failed:" + str(response.content))
 
         raise HTTPException(
             status_code=400,
@@ -150,7 +151,7 @@ def check_for_papers_category(category):
     category_list = json.loads(response.content)
 
     for cat in category_list:
-        if cat["name"] == category:
+        if cat["name"] == str(category):
             return cat["id"]
 
     # if category does not exist, return category "Uncategorized", which has always id 1
@@ -169,7 +170,7 @@ def create_papers_category(version_number):
     response = requests.post(url, headers=header, json=category, timeout=5)
 
     if response.status_code not in (200, 201):
-        print(response.content)
+        print("create_papers_category failed: ", response.content)
         raise HTTPException(
             status_code=400,
             detail="Category could not be created!"
@@ -209,7 +210,7 @@ def upload_post(meta_information, readable_text, image_id):
     response = requests.post(url, headers=header, json=post, timeout=5)
 
     if response.status_code not in (200, 201):
-        print(response.content)
+        print("upload_post failed: ", response.content)
         raise HTTPException(
             status_code=400,
             detail="Post could not be uploaded!"
@@ -218,3 +219,82 @@ def upload_post(meta_information, readable_text, image_id):
         )
 
     return response
+
+
+def upload_paper(meta_information, readable_text, image_id):
+    """Upload the post via the Wordpress API."""
+    print("upload post")
+    url = global_url + "papers"
+
+    header = generate_auth_header()
+
+    category_number = check_for_category(meta_information["category"])
+    print("upload_paper: category_papers_id", meta_information["category_papers"])
+
+    post = {
+        "title": meta_information["title"],
+        "status": "publish",
+        # WIP: Remove image_id once the image is uploaded to the media library
+        "content": readable_text,
+        "excerpt": meta_information["author"]
+        + " "
+        + meta_information["photograph"]
+        + " "
+        + meta_information["protocol"],
+        "post_type": "articles",
+        "featured_media": image_id,
+        "categories": [category_number],
+        "category_papers": [meta_information["category_papers"]],
+    }
+
+    response = requests.post(url, headers=header, json=post, timeout=5)
+
+    if response.status_code not in (200, 201):
+        print("upload_paper failed:", response.content)
+        raise HTTPException(
+            status_code=400,
+            detail="Post could not be uploaded!"
+            + str(response.status_code)
+            + str(response.content),
+        )
+
+    return response
+
+def save_page_as_image(page_number, src, path_to_file):
+    """Save the cover page of the PDF file as a PNG image."""
+
+    page = src.load_page(page_number)
+    pix = page.get_pixmap()  # render page to an image
+    # DTODO extract the number in a more dynamical way!!
+    # This will lead to an error if the directory name changes
+    number_in_dir = [int(s) for s in re.findall(r"\d+", path_to_file)]
+    # number_in_dir = [number_in_dir]
+
+    # DTODO remove this debug workaround and remove extracting from directory
+    if "localhost:10014" in os.getenv("WORDPRESS_URL"):
+        if len(number_in_dir) != 2:
+            raise ValueError(
+                "Not exactly two numbers found in directory name",
+                number_in_dir,
+                path_to_file,
+            )
+        version_number = number_in_dir[1]
+    # use case for docker development right now
+    else:
+        if len(number_in_dir) != 1:
+            raise ValueError(
+                "Not exactly one number found in directory name",
+                number_in_dir,
+                path_to_file,
+            )
+        version_number = number_in_dir[0]
+    image_title = f"coverpage-version-{version_number}-page-{page_number}"
+    image_path = f"sample_data/{image_title}.png"
+
+    pix.save(
+        image_path,
+    )
+
+    image_id = upload_image(image_path, image_title)
+
+    return image_id[0]

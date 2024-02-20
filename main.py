@@ -37,6 +37,7 @@ def upload(file: UploadFile = File(...)):
     try:
         save_path_for_pdf, path_to_new_directory = plugin_utility.upload_file(file)
     except IOError as e:
+        traceback.print_exc()
         return {"message": f"There was an error uploading the file: {e}"}
     finally:
         file.file.close()
