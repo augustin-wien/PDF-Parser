@@ -17,7 +17,7 @@ global_url = os.environ.get("WORDPRESS_URL")
 plugin_utility = PluginUtility()
 
 
-def create_post(page, image_id, category):
+def create_post(page, image_id, category, category_papers_id):
     """Create a post with the extracted text and the uploaded image."""
 
     # Get the text from the page
@@ -77,6 +77,7 @@ def create_post(page, image_id, category):
 
     # to create a readable text for the article
     readable_text = "".join(article_edit)
+    meta_information["category_paper"] = category_papers_id
 
     response = upload_post(meta_information, readable_text, image_id)
 

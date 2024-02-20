@@ -39,6 +39,7 @@ def create_meta_information(category, headline=None):
         "title": headline_or_category,
         "author": "",
         "category": category,
+        "category_papers": 1,
     }
     return meta_information
 
@@ -115,7 +116,7 @@ def extract_ending_symbols(span, ending_symbols):
         ending_symbols += 1
     return ending_symbols
 
-
+# TODO: misleading function name    
 def process_span(
     span, starting_characters, ending_symbols, headlines, searching_for_end
 ):
@@ -155,6 +156,7 @@ def extract_headlines(
         try:
             for line in text["lines"]:
                 for span in line["spans"]:
+                    # todo: variables should have the same order
                     starting_characters, ending_symbols, headlines = process_span(
                         span,
                         starting_characters,
@@ -165,7 +167,6 @@ def extract_headlines(
 
         except KeyError:
             pass
-
     return headlines, starting_characters, ending_symbols
 
 
@@ -289,6 +290,7 @@ def parse_page(page, meta_array):
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
         meta_information = create_meta_information(meta_array["category"], headline)
+        meta_information["category_papers"] = meta_array["category_papers"]
 
         # If article is not empty, set raw_text to article
         if article:

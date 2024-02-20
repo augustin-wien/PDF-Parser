@@ -1,6 +1,7 @@
 """Common utility functions for the plugin."""
 
 import os
+import re
 
 import fitz
 from dotenv import load_dotenv
@@ -231,3 +232,12 @@ class PluginUtility:
         path_to_new_directory = path_to_new_directory + "/"
 
         return save_path_for_pdf, path_to_new_directory
+    
+    def extract_version_number(self, name):
+        """Extract the version number from the directory name."""
+        number_in_dir = [int(s) for s in re.findall(r"\d+", name)]
+
+        return number_in_dir[0]
+
+
+    
