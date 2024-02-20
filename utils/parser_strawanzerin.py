@@ -38,29 +38,19 @@ class Strawanzerin:
 
         return image_id
 
-    def parse_strawanzerin_headline(self, src, only_first_page=False):
+    def parse_strawanzerin_headline(self, page):
         """Parse the strawanzerin file for headlines."""
-
-        for index, page in enumerate(src):
-            headlines = []
-            # Skip first page if only_first_page is True
-            if index == 0 and not only_first_page:
-                continue
-
-            blocks = page.get_text("dict", flags=11)["blocks"]
-            for block in blocks:
-                for line in block["lines"]:
-                    for span in line["spans"]:
-                        if span["size"] > 30:
-                            headlines += span["text"], span["bbox"], span["size"]
-
-            # Return headlines after one for loop if only_first_page is True
-            if only_first_page:
-                return headlines
+        headlines = []
+        blocks = page.get_text("dict", flags=11)["blocks"]
+        for block in blocks:
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    if span["size"] > 30:
+                        headlines += span["text"], span["bbox"], span["size"]
 
         return headlines
 
-    def parse_strawanzerin_first_page(self, save_path_for_pdf, path_to_new_directory):
+    def parse_first_page(self, save_path_for_pdf, path_to_new_directory):
         """Parse the strawanzerin file."""
 
         # Get source file
@@ -68,13 +58,13 @@ class Strawanzerin:
 
         page = src.load_page(0)
 
-        headline = self.parse_strawanzerin_headline(src, True)
+        headlines = self.parse_strawanzerin_headline(page)
 
-        if not headline:
+        if not headlines:
             print("Error: No headline found!")
 
-        if headline[3].lower() == "gratis":
-            x0, y0, x1, y1 = headline[4]
+        if headlines[3].lower() == "gratis":
+            x0, y0, x1, y1 = headlines[4]
             print("gratis", x0, y0, x1, y1)
         else:
             raise ValueError("Error: No headline gratis found!")
@@ -99,10 +89,114 @@ class Strawanzerin:
 
         return text
 
+    def get_clip_regions(self, page, headlines, even_page_number):
+        """Get clip regions for specified page."""
+        if len(headlines) == 0:
+            if even_page_number:
+                clip_regions = [
+                    (0, 0, 180, page.rect.height),
+                    (180, 0, 320, page.rect.height),
+                    (320, 0, 460, page.rect.height),
+                    (460, 0, page.rect.width, page.rect.height),
+                ]
+            else:
+                clip_regions = [
+                    (0, 0, 160, page.rect.height),
+                    (160, 0, 300, page.rect.height),
+                    (300, 0, 440, page.rect.height),
+                    (440, 0, page.rect.width, page.rect.height),
+                ]
+        elif len(headlines) == 3:
+            if even_page_number:
+                clip_regions = [
+                    (0, 0, 180, headlines[1][1]),
+                    (180, 0, 320, headlines[1][1]),
+                    (320, 0, 460, headlines[1][1]),
+                    (0, headlines[1][1], 180, page.rect.height),
+                    (180, headlines[1][1], 320, page.rect.height),
+                    (320, headlines[1][1], 460, page.rect.height),
+                    (460, 0, page.rect.width, page.rect.height),
+                ]
+            else:
+                clip_regions = [
+                    (0, 0, 160, headlines[1][1]),
+                    (160, 0, 300, headlines[1][1]),
+                    (300, 0, 440, headlines[1][1]),
+                    (0, headlines[1][1], 160, page.rect.height),
+                    (160, headlines[1][1], 300, page.rect.height),
+                    (300, headlines[1][1], 440, page.rect.height),
+                    (440, 0, page.rect.width, page.rect.height),
+                ]
+        elif len(headlines) == 6:
+            if even_page_number:
+                clip_regions = [
+                    (0, 0, 180, headlines[1][1]),
+                    (180, 0, 320, headlines[1][1]),
+                    (320, 0, 460, headlines[1][1]),
+                    (0, headlines[1][1], 180, headlines[4][1]),
+                    (180, headlines[1][1], 320, headlines[4][1]),
+                    (320, headlines[1][1], 460, headlines[4][1]),
+                    (0, headlines[4][1], 180, page.rect.height),
+                    (180, headlines[4][1], 320, page.rect.height),
+                    (320, headlines[4][1], 460, page.rect.height),
+                    (460, 0, page.rect.width, page.rect.height),
+                ]
+            else:
+                clip_regions = [
+                    (0, 0, 160, headlines[1][1]),
+                    (160, 0, 300, headlines[1][1]),
+                    (300, 0, 440, headlines[1][1]),
+                    (0, headlines[1][1], 160, headlines[3][1]),
+                    (160, headlines[1][1], 300, headlines[3][1]),
+                    (300, headlines[1][1], 440, headlines[3][1]),
+                    (0, headlines[3][1], 160, page.rect.height),
+                    (160, headlines[3][1], 300, page.rect.height),
+                    (300, headlines[3][1], 440, page.rect.height),
+                    (440, 0, page.rect.width, page.rect.height),
+                ]
+        else:
+            raise ValueError("Error: Number of headlines found is not 0, 3 or 6!")
+
+        return clip_regions
+
+    def get_text_from_pages(self, page, headlines, even_page_number):
+        """Parse the strawanzerin file."""
+
+        if even_page_number:
+            clip_regions = self.get_clip_regions(page, headlines, True)
+        else:
+            clip_regions = self.get_clip_regions(page, headlines, False)
+
+        text = ""
+        for x0, y0, x1, y1 in clip_regions:
+            clip_region = (x0, y0, x1, y1)
+            print(f"clip_region: {clip_region}")
+            text += page.get_text("text", clip=clip_region)
+
+        return text
+
+    def parse_following_pages(self, save_path_for_pdf):
+        """Parse page two of the strawanzerin file."""
+
+        # Get source file
+        src = fitz.open(save_path_for_pdf)
+
+        for index, page in enumerate(src):
+            if index == 0:
+                continue
+
+            headlines = self.parse_strawanzerin_headline(page)
+
+            # Since index starts at zero, even index number means odd page number
+            even_index_number = index % 2 == 1
+
+            text = self.get_text_from_pages(page, headlines, even_index_number)
+
+        return text
+
     def parse_strawanzerin(self, save_path_for_pdf, path_to_new_directory):
         """Parse the strawanzerin file."""
         # parse_strawanzerin_image(save_path_for_pdf, path_to_new_directory)
-        text = self.parse_strawanzerin_first_page(
-            save_path_for_pdf, path_to_new_directory
-        )
+        text = self.parse_first_page(save_path_for_pdf, path_to_new_directory)
+        text += self.parse_following_pages(save_path_for_pdf)
         print(text)
