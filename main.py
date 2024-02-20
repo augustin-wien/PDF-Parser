@@ -56,12 +56,11 @@ def upload(file: UploadFile = File(...)):
 
             # check if the version number exists already as papers category
             # if not, create it
-            
+
             papers_category_id = check_for_papers_category(version_number)
             if not papers_category_id:
                 papers_category_id = create_papers_category(version_number)
                 print(f"papers_category_id: {papers_category_id}")
-
 
             categories = []
             meta_array = {
@@ -71,12 +70,11 @@ def upload(file: UploadFile = File(...)):
                 "raw_text": "",
                 "headlines": [],
                 "starting_characters": [],
-                "category_papers": papers_category_id, # ausgabennummer
+                "category_papers": papers_category_id,  # ausgabennummer
             }
             print(f"meta_array: {meta_array}")
 
             for index, page in enumerate(src):
-
 
                 # skip first page
                 if index == 0:
@@ -90,7 +88,7 @@ def upload(file: UploadFile = File(...)):
                         page, index, path_to_new_directory
                     )
                     categories.append(category)
-                
+
                 except IOError as e:
                     traceback.print_exc()
                     error_message = f"Error identifying category: {e}"
@@ -107,7 +105,7 @@ def upload(file: UploadFile = File(...)):
                 meta_array["category"] = category
                 meta_array["image_id"] = image_id
                 meta_array["image_text"] = image_text
-                print(f"Entering parse page once meta_array:" )
+                print(f"Entering parse page once meta_array:")
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array
@@ -131,7 +129,7 @@ def upload(file: UploadFile = File(...)):
                     "raw_text": "",
                     "headlines": [],
                     "starting_characters": [],
-                    "category_papers": papers_category_id, # ausgabennummer
+                    "category_papers": papers_category_id,  # ausgabennummer
                 }
 
                 # DTodo: create post with type papers and the name of the issue # noqa: E501

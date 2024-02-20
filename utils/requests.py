@@ -24,11 +24,11 @@ def generate_auth_header():
         user = os.getenv("WP_API_USER")
         if user is None:
             raise ValueError("WP_API_USER not set in .env")
-        
+
         password = os.getenv("WP_API_KEY")
         if password is None:
             raise ValueError("WP_API_KEY not set in .env")
-        
+
         credentials = user + ":" + password
 
         token = base64.b64encode(credentials.encode())
@@ -118,6 +118,7 @@ def check_for_category(category):
     # if category does not exist, return category "Uncategorized", which has always id 1
     return 1
 
+
 def check_for_papers_category(category):
     """
     Check if the category exists and return it.
@@ -155,6 +156,7 @@ def check_for_papers_category(category):
     # if category does not exist, return category "Uncategorized", which has always id 1
     return None
 
+
 def create_papers_category(version_number):
     """Create a new category for the papers."""
     url = global_url + "category_papers"
@@ -176,6 +178,7 @@ def create_papers_category(version_number):
         )
 
     return json.loads(response.content)["id"]
+
 
 def upload_post(meta_information, readable_text, image_id):
     """Upload the post via the Wordpress API."""
@@ -200,7 +203,7 @@ def upload_post(meta_information, readable_text, image_id):
         "post_type": "articles",
         "featured_media": image_id,
         "categories": [category_number],
-        "category_papers": [meta_information["category_papers"]]
+        "category_papers": [meta_information["category_papers"]],
     }
 
     response = requests.post(url, headers=header, json=post, timeout=5)

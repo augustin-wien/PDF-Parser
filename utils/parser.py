@@ -116,7 +116,7 @@ def extract_ending_symbols(span, ending_symbols):
         ending_symbols += 1
     return ending_symbols
 
-# TODO: misleading function name    
+
 def process_span(
     span, starting_characters, ending_symbols, headlines, searching_for_end
 ):
@@ -156,7 +156,7 @@ def extract_headlines(
         try:
             for line in text["lines"]:
                 for span in line["spans"]:
-                    # todo: variables should have the same order
+                    # DTODO: variables should have the same order
                     starting_characters, ending_symbols, headlines = process_span(
                         span,
                         starting_characters,
