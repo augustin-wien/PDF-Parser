@@ -41,7 +41,7 @@ jobs:
           pip install pylint
       - name: Analysing the code with pylint
         run: |
-          pylint $(git ls-files '*.py') --max-line-length=120 --disable=too-few-public-methods,too-many-locals,too-many-arguments,too-many-statements,f-string-without-interpolation
+          pylint $(git ls-files '*.py') --max-line-length=120 --disable=too-few-public-methods,too-many-locals,too-many-arguments,too-many-statements
       - name: Install dependencies for black
         run: |
           pip install black

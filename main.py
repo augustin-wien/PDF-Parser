@@ -7,9 +7,8 @@ import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 from utils.parser import parse_image, parse_page
+from utils.requests import check_for_papers_category, create_papers_category
 from utils.utils import PluginUtility
-from utils.requests import check_for_papers_category
-from utils.requests import create_papers_category
 
 app = FastAPI()
 
@@ -81,7 +80,7 @@ def upload(file: UploadFile = File(...)):
                     continue
                 if index > 15:
                     break
-                print(f"parse page", index, f"of {len(src)} pages.")
+                print(f"parse page {index} of {len(src)} pages.")
                 # Identify category of page
                 try:
                     category = plugin_utility.identify_category(
@@ -105,7 +104,7 @@ def upload(file: UploadFile = File(...)):
                 meta_array["category"] = category
                 meta_array["image_id"] = image_id
                 meta_array["image_text"] = image_text
-                print(f"Entering parse page once meta_array:")
+                print("Entering parse page once meta_array:")
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array
