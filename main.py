@@ -87,6 +87,10 @@ def upload(file: UploadFile = File(...)):
                 meta_array["image_text"] = image_text
                 print(f"Entering parse page once meta_array: {meta_array}")
 
+                # Crop page if category is "editorial"
+                if category == "editorial":
+                    page = plugin_utility.crop_by_percentage_page(40, page, src, index, path_to_new_directory)
+
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array
                 )
