@@ -3,6 +3,7 @@
 import os
 
 import fitz
+from utils import requests
 from utils.parser_augustin import parse_image
 
 
@@ -198,7 +199,11 @@ class Strawanzerin:
 
     def parse_strawanzerin(self, save_path_for_pdf, path_to_new_directory):
         """Parse the strawanzerin file."""
-        # parse_strawanzerin_image(save_path_for_pdf, path_to_new_directory)
+        image_id = self.parse_strawanzerin_image(
+            save_path_for_pdf, path_to_new_directory
+        )
         text = self.parse_first_page(save_path_for_pdf, path_to_new_directory)
         text += self.parse_following_pages(save_path_for_pdf)
-        print(text)
+
+        # Post raw text and category to Wordpress backend with exception handling in function
+        requests.upload_post("strawanzerin", "Strawanzerin", text, image_id)

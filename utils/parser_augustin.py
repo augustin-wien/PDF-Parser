@@ -28,19 +28,6 @@ def get_all_images(page, index, src, path_to_new_directory):
     return highest_index
 
 
-# Function creates meta information for the post
-def create_meta_information(category):
-    """Create meta information for the post."""
-    meta_information = {
-        "protocol": "",
-        "photograph": "",
-        "title": category,
-        "author": "",
-        "category": category,
-    }
-    return meta_information
-
-
 # Function returns all the text from the given PDF page
 def get_raw_text(page):
     """Get the raw text from the PDF page."""
@@ -97,18 +84,5 @@ def parse_page(page, category, image_text, image_id):
         error_message = f"Error extracting raw text: {e}"
         raise IOError(error_message) from e
 
-    # Try posting raw text and category to Wordpress backend with exception handling
-    try:
-        meta_information = create_meta_information(category)
-        response = requests.upload_post(meta_information, raw_text, image_id)
-    except IOError as e:
-        traceback.print_exc()
-        error_message = (
-            f"WPLocal not running? No connection established uploading from main: {e}"
-        )
-        raise IOError(error_message) from e
-
-    if response.status_code not in [200, 201]:
-        raise IOError(
-            f"Error posting to Wordpress: {response.content} with status code {response.status_code}"
-        )
+    # Post raw text and category to Wordpress backend with exception handling in function
+    requests.upload_post(category, category, raw_text, image_id)

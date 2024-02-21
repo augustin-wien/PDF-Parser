@@ -110,34 +110,35 @@ def check_for_category(category):
     return 1
 
 
-def upload_post(meta_information, readable_text, image_id):
+def upload_post(category, headline, readable_text, image_id):
     """Upload the post via the Wordpress API."""
-    url = global_url + "posts"
+    try:
+        url = global_url + "posts"
 
-    header = generate_auth_header()
+        header = generate_auth_header()
 
-    category_number = check_for_category(meta_information["category"])
+        category_number = check_for_category(category)
 
-    post = {
-        "title": meta_information["title"],
-        "status": "publish",
-        # WIP: Remove image_id once the image is uploaded to the media library
-        "content": readable_text,
-        "excerpt": meta_information["author"]
-        + " "
-        + meta_information["photograph"]
-        + " "
-        + meta_information["protocol"],
-        "post_type": "articles",
-        "featured_media": image_id,
-        "categories": [category_number],
-    }
+        post = {
+            "title": headline,
+            "status": "publish",
+            "content": readable_text,
+            "post_type": "articles",
+            "featured_media": image_id,
+            "categories": [category_number],
+        }
 
-    response = requests.post(url, headers=header, json=post, timeout=5)
+        response = requests.post(url, headers=header, json=post, timeout=5)
+    except HTTPException as e:
+        traceback.print_exc()
+        error_message = (
+            f"WPLocal not running? No connection established uploading from main: {e}"
+        )
+        raise IOError(error_message) from e
 
     if response.status_code not in (200, 201):
         raise HTTPException(
-            status_code=400,
+            status_code=500,
             detail="Post could not be uploaded!"
             + str(response.status_code)
             + str(response.content),
