@@ -232,7 +232,9 @@ class PluginUtility:
 
         return save_path_for_pdf, path_to_new_directory
 
-    def crop_by_percentage_page(self, percentage, original_page, src, page_number, path_to_new_directory):
+    def crop_by_percentage_page(
+        self, percentage, original_page, src, page_number, path_to_new_directory
+    ):
         """Crop the page by a percentage from the top."""
         self.output_document = fitz.open()
         # Get the dimensions of the original page
@@ -241,7 +243,9 @@ class PluginUtility:
 
         # Create a new page with half the height of the original page
         new_page_height = original_height / (100 / percentage)
-        new_page = self.output_document.new_page(-1, width=original_width, height=new_page_height)
+        new_page = self.output_document.new_page(
+            -1, width=original_width, height=new_page_height
+        )
 
         # Set the crop box for the new page to half of the original page
         new_page.show_pdf_page(new_page.rect, src, page_number, clip=new_page.rect)

@@ -89,7 +89,9 @@ def upload(file: UploadFile = File(...)):
 
                 # Crop page if category is "editorial"
                 if category == "editorial":
-                    page = plugin_utility.crop_by_percentage_page(40, page, src, index, path_to_new_directory)
+                    page = plugin_utility.crop_by_percentage_page(
+                        40, page, src, index, path_to_new_directory
+                    )
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array
