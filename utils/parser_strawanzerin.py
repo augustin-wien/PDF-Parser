@@ -31,7 +31,7 @@ class Strawanzerin:
         )
 
         if number_of_images != 1:
-            print("Error: Number of images found is not 1!")
+            raise ValueError("Error: Number of images found is not 1!")
 
         return image_id
 
@@ -47,6 +47,64 @@ class Strawanzerin:
 
         return headlines
 
+    def flags_decomposer(self, flag):
+        """Make font flags human readable."""
+        flags = []
+        if flag & 2**0:
+            flags.append("superscript")
+        if flag & 2**1:
+            flags.append("italic")
+        if flag & 2**2:
+            flags.append("serifed")
+        else:
+            flags.append("sans")
+        if flag & 2**3:
+            flags.append("monospaced")
+        else:
+            flags.append("proportional")
+        if flag & 2**4:
+            flags.append("bold")
+        return ", ".join(flags)
+
+    def add_html_tags_to_text(self, page, clip_region):
+        """Extract metadata from the PDF page."""
+        text = ""
+        blocks = page.get_text("dict", clip=clip_region, sort=True, flags=11)["blocks"]
+        for block in blocks:
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    # Cover case for headlines with size > 30
+                    if span["size"] > 30:
+                        text += "<h2>" + span["text"] + "</h2>"
+                        continue
+
+                    # Cover case for headlines with different font color
+                    if (
+                        f'#{span["color"]:06x}' != "#221f1f"
+                        or f'#{span["color"]:06x}' != "#000000"
+                        and span["size"] > 20
+                    ):
+                        text += "<h3><b>" + span["text"] + "<b/></h3>"
+                        continue
+
+                    # Cover case for bold headlines with size > 10
+                    if span["size"] > 10 and span["flags"] & 2**4:
+                        text += "<h4><b>" + span["text"].upper() + "</b></h4>"
+                        continue
+
+                    # Cover case for italic fonts with size > 10
+                    if span["size"] < 10 and span["flags"] & 2**1:
+                        text += "<h5><i>" + span["text"] + "</i></h5>"
+                        continue
+
+                    # Cover case for bold headlines with size > 10
+                    if span["size"] < 10 and span["flags"] & 2**4:
+                        text += "<h5><b>" + span["text"] + "</b></h5>"
+                        continue
+
+                    text += span["text"]
+        return text
+
     def parse_first_page(self, save_path_for_pdf, path_to_new_directory):
         """Parse the strawanzerin file."""
 
@@ -58,7 +116,7 @@ class Strawanzerin:
         headlines = self.parse_strawanzerin_headline(page)
 
         if not headlines:
-            print("Error: No headline found!")
+            raise ValueError("Error: No headline found!")
 
         if headlines[3].lower() == "gratis":
             x0, y0, x1, y1 = headlines[4]
@@ -75,7 +133,7 @@ class Strawanzerin:
         text = ""
         for i, (x0, y0, x1, y1) in enumerate(clip_regions):
             clip_region = (x0, y0, x1, y1)
-            text += page.get_text("text", clip=clip_region)
+            text += self.add_html_tags_to_text(page, clip_region)
 
             # Save the image to the new directory
             if self.debug:
@@ -157,32 +215,30 @@ class Strawanzerin:
 
     def get_text_from_pages(self, page, headlines, even_page_number):
         """Parse the strawanzerin file."""
-
+        text, column_text = "", ""
         if even_page_number:
             clip_regions = self.get_clip_regions(page, headlines, True)
         else:
             clip_regions = self.get_clip_regions(page, headlines, False)
 
-        text, column_text = "", ""
         for index, (x0, y0, x1, y1) in enumerate(clip_regions):
             clip_region = (x0, y0, x1, y1)
 
             # Only add the last column to the variable column_text
             if index == len(clip_regions) - 1:
-                column_text += page.get_text("text", clip=clip_region)
+                column_text += self.add_html_tags_to_text(page, clip_region)
+                continue
 
-            text += page.get_text("text", clip=clip_region)
+            text += self.add_html_tags_to_text(page, clip_region)
 
-        # Finally merge the last column to the text
-        text += column_text
-
-        return text
+        return text, column_text
 
     def parse_following_pages(self, save_path_for_pdf):
         """Parse page two of the strawanzerin file."""
-
         # Get source file
         src = fitz.open(save_path_for_pdf)
+
+        text, column_text = "", ""
 
         for index, page in enumerate(src):
             if index == 0:
@@ -192,8 +248,12 @@ class Strawanzerin:
 
             # Since index starts at zero, even index number means odd page number
             even_index_number = index % 2 == 1
+            text_array = self.get_text_from_pages(page, headlines, even_index_number)
+            text += text_array[0]
+            column_text += text_array[1]
 
-            text = self.get_text_from_pages(page, headlines, even_index_number)
+        # Finally merge the last column to the text
+        text += column_text
 
         return text
 
