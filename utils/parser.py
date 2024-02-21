@@ -1,5 +1,6 @@
 """Parsing functions to extract images and text from PDF."""
 
+import fitz
 import traceback
 
 from utils import requests
@@ -15,13 +16,21 @@ def get_all_images(page, index, src, path_to_new_directory):
 
     for img_index, image in enumerate(img_list):
         image_index = image[0]
-        base_image = src.extract_image(image_index)
-        image_bytes = base_image["image"]
+
+        pix = fitz.Pixmap(src, image_index)  # pixmap from the image xref
+        if pix.colorspace is None:  # no colorspace, i.e. a mask
+            abs_width = abs(pix.width)
+            abs_height = abs(pix.height)
+            pix2 = fitz.Pixmap(fitz.csGRAY, (0, 0, abs_width, abs_height), 0)
+            # create a black image
+            pix2.set_rect(pix.irect, [0])
+            # use the mask from pix to set the alpha channel of pix2
+            pix3 = fitz.Pixmap(pix2, pix)
+            pix = pix3  # use the new pixmap
 
         # Save the image to a file
         image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
-        with open(image_filename, "wb") as image_file:
-            image_file.write(image_bytes)
+        pix.save(image_filename)
 
         highest_index = img_index
 
