@@ -1,7 +1,7 @@
 """Parsing functions to extract images and text from PDF."""
 
-import fitz
 import traceback
+import fitz
 
 from utils import requests
 
