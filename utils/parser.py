@@ -249,7 +249,9 @@ def parse_image(page, src, index, path_to_new_directory):
                 if number_of_images == 1:
                     return number_of_images, image_id, image_text
                 # this shouldn't contain new lines because they are transforemd to <p> tags which are not block elements
-                image_text += '<!-- wp:image {"id":'+str(image_id)+'} --><figure class="wp-block-image size-full"><img src="'+image_src+'"alt="" class="wp-image-'+str(image_id)+'"/></figure><!-- /wp:image -->'
+                image_text += '<!-- wp:image {"id":'+str(image_id)+\
+                '} --><figure class="wp-block-image size-full"><img src="'+\
+                image_src+'"alt="" class="wp-image-'+str(image_id)+'"/></figure><!-- /wp:image -->'
             image_index += 1
     except IOError as e:
         traceback.print_exc()
