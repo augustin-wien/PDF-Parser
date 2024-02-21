@@ -233,6 +233,7 @@ class PluginUtility:
         return save_path_for_pdf, path_to_new_directory
 
     def crop_by_percentage_page(self, percentage, original_page, src, page_number, path_to_new_directory):
+        """Crop the page by a percentage from the top."""
         self.output_document = fitz.open()
         # Get the dimensions of the original page
         original_width = original_page.rect.width
