@@ -127,8 +127,12 @@ def upload_post(category, headline, readable_text, image_id):
             "featured_media": image_id,
             "categories": [category_number],
         }
-
-        response = requests.post(url, headers=header, json=post, timeout=5)
+        try:
+            response = requests.post(url, headers=header, json=post, timeout=10)
+        except requests.exceptions.Timeout as e:
+            traceback.print_exc()
+            error_message = f"Timeout during uploading post: {e}"
+            raise TimeoutError(error_message) from e
     except HTTPException as e:
         traceback.print_exc()
         error_message = (

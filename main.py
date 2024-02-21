@@ -88,11 +88,18 @@ def upload(file: UploadFile = File(...)):
                 src.close()
             except IOError as e:
                 traceback.print_exc()
-                error_message = f"Final error catchment: {e}"
+                error_message = f"Final error catchment parsing Augustin file: {e}"
                 raise IOError(error_message) from e
         else:
             print("Successfully uploaded strawanzerin file")
             strawanzerin = Strawanzerin()
-            strawanzerin.parse_strawanzerin(save_path_for_pdf, path_to_new_directory)
+            try:
+                strawanzerin.parse_strawanzerin(
+                    save_path_for_pdf, path_to_new_directory
+                )
+            except IOError as e:
+                traceback.print_exc()
+                error_message = f"Error parsing Strawanzerin: {e}"
+                raise IOError(error_message) from e
 
     return {"message": f"Successfully uploaded {file.filename}"}

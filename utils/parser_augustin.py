@@ -32,7 +32,7 @@ def get_all_images(page, index, src, path_to_new_directory):
 def get_raw_text(page):
     """Get the raw text from the PDF page."""
     # get raw text from page
-    raw_text = page.get_text()
+    raw_text = page.get_text("text", sort=True)
     return raw_text
 
 
