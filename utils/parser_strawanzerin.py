@@ -1,13 +1,9 @@
 """Parsing functions to extract images and text from strawanzerin PDF file."""
 
-# import traceback
-
 import os
 
 import fitz
 from utils.parser_augustin import parse_image
-
-# from utils import requests
 
 
 class Strawanzerin:
@@ -65,7 +61,6 @@ class Strawanzerin:
 
         if headlines[3].lower() == "gratis":
             x0, y0, x1, y1 = headlines[4]
-            print("gratis", x0, y0, x1, y1)
         else:
             raise ValueError("Error: No headline gratis found!")
 
@@ -167,11 +162,18 @@ class Strawanzerin:
         else:
             clip_regions = self.get_clip_regions(page, headlines, False)
 
-        text = ""
-        for x0, y0, x1, y1 in clip_regions:
+        text, column_text = "", ""
+        for index, (x0, y0, x1, y1) in enumerate(clip_regions):
             clip_region = (x0, y0, x1, y1)
-            print(f"clip_region: {clip_region}")
+
+            # Only add the last column to the variable column_text
+            if index == len(clip_regions) - 1:
+                column_text += page.get_text("text", clip=clip_region)
+
             text += page.get_text("text", clip=clip_region)
+
+        # Finally merge the last column to the text
+        text += column_text
 
         return text
 
