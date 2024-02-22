@@ -5,6 +5,7 @@ import re
 
 import fitz
 from dotenv import load_dotenv
+
 from utils.requests import upload_image
 
 
@@ -233,7 +234,6 @@ class PluginUtility:
 
         return save_path_for_pdf, path_to_new_directory
 
-
     def crop_by_percentage_page(
         self, percentage, original_page, src, page_number, path_to_new_directory
     ):
@@ -283,4 +283,3 @@ class PluginUtility:
         image_id = upload_image(image_path, image_title)
 
         return image_id[0]
-
