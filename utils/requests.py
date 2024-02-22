@@ -102,46 +102,36 @@ def check_for_category(category):
     for cat in category_list:
         if category == "tun & lassen" and cat["name"].strip() == "tun &amp; lassen":
             return cat["id"]
-        if cat["name"].strip() == category.strip():
+        if cat["name"].strip() == str(category).strip():
             return cat["id"]
 
     # if category does not exist, return category "Uncategorized", which has always id 1
     return 1
 
 
-def upload_post(category, headline, readable_text, image_id):
+def upload_post(meta_information, readable_text, image_id):
     """Upload the post via the Wordpress API."""
-    try:
-        url = global_url + "posts"
+    url = global_url + "posts"
 
-        header = generate_auth_header()
+    header = generate_auth_header()
 
-        category_number = check_for_category(category)
+    category_number = check_for_category(meta_information["category"])
 
-        post = {
-            "title": headline,
-            "status": "publish",
-            "content": readable_text,
-            "post_type": "articles",
-            "featured_media": image_id,
-            "categories": [category_number],
-        }
-        try:
-            response = requests.post(url, headers=header, json=post, timeout=10)
-        except requests.exceptions.Timeout as e:
-            traceback.print_exc()
-            error_message = f"Timeout during uploading post: {e}"
-            raise TimeoutError(error_message) from e
-    except HTTPException as e:
-        traceback.print_exc()
-        error_message = (
-            f"WPLocal not running? No connection established uploading from main: {e}"
-        )
-        raise IOError(error_message) from e
+    post = {
+        "title": meta_information["title"],
+        "status": "publish",
+        "content": readable_text,
+        "excerpt": "",
+        "post_type": "articles",
+        "featured_media": image_id,
+        "categories": [category_number],
+    }
+
+    response = requests.post(url, headers=header, json=post, timeout=5)
 
     if response.status_code not in (200, 201):
         raise HTTPException(
-            status_code=500,
+            status_code=400,
             detail="Post could not be uploaded!"
             + str(response.status_code)
             + str(response.content),

@@ -278,5 +278,10 @@ class Strawanzerin:
         text += self.parse_following_pages(save_path_for_pdf)
         text += image_text
 
+        meta_array = {
+            "title": "Strawanzerin",
+            "category": "Strawanzerin",
+        }
+
         # Post raw text and category to Wordpress backend with exception handling in function
-        requests.upload_post("strawanzerin", "Strawanzerin", text, image_id)
+        requests.upload_post(meta_array, text, image_id)
