@@ -262,7 +262,7 @@ def parse_image(page, src, index, path_to_new_directory):
         image_src = None
         for img_info in page.get_images(full=True):
             img_rect = fitz.Rect(img_info[:4])
-            if rx.contains(img_rect):
+            if rx.contains(img_rect) or image_index == gustl_id:
                 image_filename = (
                     f"{path_to_new_directory}page_{index}_img_{image_index}.png"
                 )

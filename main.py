@@ -107,7 +107,7 @@ def upload(file: UploadFile = File(...)):
                         "title": "Gustl",
                         "author": "",
                         "category": category,
-                        "category_papers": [1],  # DTODO: include it from other mr
+                        "category_papers": papers_category_id,
                     }
                     requests.upload_post(meta, "", gustl_wp_id)
 
