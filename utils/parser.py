@@ -248,6 +248,8 @@ def parse_image(page, src, index, path_to_new_directory):
         number_of_images, gustl_id = get_all_images(
             page, index, src, path_to_new_directory
         )
+        print(f"Gustl id is {gustl_id}")
+
         gustl_wp_id = None
 
         image_text = ""
@@ -269,8 +271,11 @@ def parse_image(page, src, index, path_to_new_directory):
                 )
                 if number_of_images == 1:
                     return number_of_images, image_id, image_text, gustl_wp_id
-
+                print(
+                    f"Adding image {image_index} to image_text and gustl id is {gustl_id}"
+                )
                 if image_index == gustl_id:
+                    print(f"Setting gustl_wp_id to {image_id}")
                     gustl_wp_id = image_id
                     # Don't add gustl to image_text
                     continue
