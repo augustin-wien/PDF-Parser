@@ -13,9 +13,11 @@ def get_all_images(page, index, src, path_to_new_directory):
     img_list = page.get_images(full=True)
 
     highest_index = 0
+    gustl_id = None
 
     for img_index, image in enumerate(img_list):
         image_index = image[0]
+        contains_gustl = False
 
         pix = fitz.Pixmap(src, image_index)  # pixmap from the image xref
         if pix.colorspace is None:  # no colorspace, i.e. a mask
@@ -27,14 +29,21 @@ def get_all_images(page, index, src, path_to_new_directory):
             # use the mask from pix to set the alpha channel of pix2
             pix3 = fitz.Pixmap(pix2, pix)
             pix = pix3  # use the new pixmap
+            # check dimensions for gustl
+            if abs_width > 2000 and abs_height > 1000:
+                print(abs_width, abs_height)
+                contains_gustl = True
 
         # Save the image to a file
         image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
         pix.save(image_filename)
 
         highest_index = img_index
+        if contains_gustl:
+            print(f"Found Gustl on page {index} with image index {img_index}")
+            gustl_id = img_index
 
-    return highest_index
+    return highest_index, gustl_id
 
 
 # Function creates meta information for the post
@@ -235,11 +244,14 @@ def parse_image(page, src, index, path_to_new_directory):
     image_text where each image is embedded in case of more than one image.
     """
     try:
-        number_of_images = get_all_images(page, index, src, path_to_new_directory)
+        number_of_images, gustl_id = get_all_images(
+            page, index, src, path_to_new_directory
+        )
+        gustl_wp_id = None
 
         image_text = ""
         if number_of_images == 0:
-            return number_of_images, 0, image_text
+            return number_of_images, 0, image_text, gustl_wp_id
 
         for image_index in range(number_of_images + 1):
             image_filename = (
@@ -249,7 +261,12 @@ def parse_image(page, src, index, path_to_new_directory):
                 image_filename, f"page_{index}_img_{image_index}.png"
             )
             if number_of_images == 1:
-                return number_of_images, image_id, image_text
+                return number_of_images, image_id, image_text, gustl_wp_id
+
+            if image_index == gustl_id:
+                gustl_wp_id = image_id
+                # Don't add gustl to image_text
+                continue
 
             image_text += f"""
                 <!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
@@ -261,7 +278,7 @@ def parse_image(page, src, index, path_to_new_directory):
         error_message = f"Error extracting and uploading images: {e}"
         raise IOError(error_message) from e
 
-    return number_of_images, image_id, image_text
+    return number_of_images, image_id, image_text, gustl_wp_id
 
 
 def parse_page(page, meta_array):
