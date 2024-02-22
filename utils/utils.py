@@ -237,6 +237,9 @@ class PluginUtility:
         """Extract the version number from the directory name."""
         number_in_dir = [int(s) for s in re.findall(r"\d+", name)]
 
+        if len(number_in_dir) != 1:
+            raise ValueError("The directory name does not contain exactly one number.")
+
         return number_in_dir[0]
 
     def save_page_as_image(self, page_number, src, name):
