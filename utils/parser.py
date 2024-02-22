@@ -241,22 +241,33 @@ def parse_image(page, src, index, path_to_new_directory):
         image_text = ""
         if number_of_images == 0:
             return number_of_images, 0, image_text
-
-        for image_index in range(number_of_images + 1):
-            image_filename = (
-                f"{path_to_new_directory}page_{index}_img_{image_index}.png"
-            )
-            image_id, image_src = requests.upload_image(
-                image_filename, f"page_{index}_img_{image_index}.png"
-            )
-            if number_of_images == 1:
-                return number_of_images, image_id, image_text
-
-            image_text += f"""
-                <!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
-                <figure class="wp-block-image size-full"><img src="{image_src}"
-                alt="" class="wp-image-{image_id}"/></figure><!-- /wp:image -->"""
-
+        # Exclude images that are not in the page rectangle
+        rx = page.rect
+        image_index = 0
+        image_id = None
+        image_src = None
+        for img_info in page.get_images(full=True):
+            img_rect = fitz.Rect(img_info[:4])
+            if rx.contains(img_rect):
+                image_filename = (
+                    f"{path_to_new_directory}page_{index}_img_{image_index}.png"
+                )
+                image_id, image_src = requests.upload_image(
+                    image_filename, f"page_{index}_img_{image_index}.png"
+                )
+                if number_of_images == 1:
+                    return number_of_images, image_id, image_text
+                # this shouldn't contain new lines because they are transforemd to <p> tags which are not block elements
+                image_text += (
+                    '<!-- wp:image {"id":'
+                    + str(image_id)
+                    + '} --><figure class="wp-block-image size-full"><img src="'
+                    + image_src
+                    + '"alt="" class="wp-image-'
+                    + str(image_id)
+                    + '"/></figure><!-- /wp:image -->'
+                )
+            image_index += 1
     except IOError as e:
         traceback.print_exc()
         error_message = f"Error extracting and uploading images: {e}"
