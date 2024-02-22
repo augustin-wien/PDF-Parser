@@ -355,7 +355,7 @@ def process_augustin_file(save_path_for_pdf, path_to_new_directory, plugin_utili
         meta_array["category"] = category
         meta_array["image_id"] = image_id
         meta_array["image_text"] = image_text
-        print(f"Entering parse page once meta_array: {meta_array}")
+        print("Entering parse page once meta_array:")
 
         raw_text, headlines, starting_characters, next_page_needed = parse_page(
             page, meta_array
@@ -379,4 +379,4 @@ def process_augustin_file(save_path_for_pdf, path_to_new_directory, plugin_utili
             "headlines": [],
             "starting_characters": [],
         }
-        src.close()
+    src.close()
