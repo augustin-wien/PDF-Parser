@@ -26,14 +26,16 @@ class Strawanzerin:
         index = "strawanzerin"
 
         # Get image from PDF
-        number_of_images, image_id, _ = parse_image(
+        number_of_images, image_id, image_text = parse_image(
             page, src, index, path_to_new_directory
         )
 
-        if number_of_images != 1:
-            raise ValueError("Error: Number of images found is not 1!")
+        if number_of_images == 0:
+            raise ValueError(
+                f"Error: Number of images found is {number_of_images}, which cannot be!"
+            )
 
-        return image_id
+        return image_id, image_text
 
     def parse_strawanzerin_headline(self, page):
         """Parse the strawanzerin file for headlines."""
@@ -43,7 +45,11 @@ class Strawanzerin:
             for line in block["lines"]:
                 for span in line["spans"]:
                     if span["size"] > 30:
-                        headlines += span["text"], span["bbox"], span["size"]
+                        headlines += (
+                            span["text"],
+                            span["bbox"],
+                            span["size"],
+                        )
 
         return headlines
 
@@ -161,6 +167,10 @@ class Strawanzerin:
                     (440, 0, page.rect.width, page.rect.height),
                 ]
         elif len(headlines) == 3:
+            if not isinstance(headlines[1][1], float):
+                raise ValueError(
+                    f"Error: y0 coordinate is not a number but {headlines[1][1]}!"
+                )
             if even_page_number:
                 clip_regions = [
                     (0, 0, 180, headlines[1][1]),
@@ -182,14 +192,19 @@ class Strawanzerin:
                     (440, 0, page.rect.width, page.rect.height),
                 ]
         elif len(headlines) == 6:
+            # Check if y0 coordinate is a number
+            if not isinstance(headlines[1][1], float) or not isinstance(
+                headlines[4][1], float
+            ):
+                raise ValueError(
+                    f"""Error: y0 coordinate is not a number either from first headline
+                      {headlines[1]} or from second headline {headlines[4]}!"""
+                )
             if even_page_number:
                 clip_regions = [
-                    (0, 0, 180, headlines[1][1]),
-                    (180, 0, 320, headlines[1][1]),
-                    (320, 0, 460, headlines[1][1]),
-                    (0, headlines[1][1], 180, headlines[4][1]),
-                    (180, headlines[1][1], 320, headlines[4][1]),
-                    (320, headlines[1][1], 460, headlines[4][1]),
+                    (0, 0, 180, headlines[4][1]),
+                    (180, 0, 320, headlines[4][1]),
+                    (320, 0, 460, headlines[4][1]),
                     (0, headlines[4][1], 180, page.rect.height),
                     (180, headlines[4][1], 320, page.rect.height),
                     (320, headlines[4][1], 460, page.rect.height),
@@ -197,15 +212,12 @@ class Strawanzerin:
                 ]
             else:
                 clip_regions = [
-                    (0, 0, 160, headlines[1][1]),
-                    (160, 0, 300, headlines[1][1]),
-                    (300, 0, 440, headlines[1][1]),
-                    (0, headlines[1][1], 160, headlines[3][1]),
-                    (160, headlines[1][1], 300, headlines[3][1]),
-                    (300, headlines[1][1], 440, headlines[3][1]),
-                    (0, headlines[3][1], 160, page.rect.height),
-                    (160, headlines[3][1], 300, page.rect.height),
-                    (300, headlines[3][1], 440, page.rect.height),
+                    (0, 0, 160, headlines[4][1]),
+                    (160, 0, 300, headlines[4][1]),
+                    (300, 0, 440, headlines[4][1]),
+                    (0, headlines[4][1], 160, page.rect.height),
+                    (160, headlines[4][1], 300, page.rect.height),
+                    (300, headlines[4][1], 440, page.rect.height),
                     (440, 0, page.rect.width, page.rect.height),
                 ]
         else:
@@ -259,11 +271,12 @@ class Strawanzerin:
 
     def parse_strawanzerin(self, save_path_for_pdf, path_to_new_directory):
         """Parse the strawanzerin file."""
-        image_id = self.parse_strawanzerin_image(
+        image_id, image_text = self.parse_strawanzerin_image(
             save_path_for_pdf, path_to_new_directory
         )
         text = self.parse_first_page(save_path_for_pdf, path_to_new_directory)
         text += self.parse_following_pages(save_path_for_pdf)
+        text += image_text
 
         # Post raw text and category to Wordpress backend with exception handling in function
         requests.upload_post("strawanzerin", "Strawanzerin", text, image_id)
