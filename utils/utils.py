@@ -1,6 +1,7 @@
 """Common utility functions for the plugin."""
 
 import os
+import re
 
 import fitz
 from dotenv import load_dotenv
@@ -231,3 +232,30 @@ class PluginUtility:
         path_to_new_directory = path_to_new_directory + "/"
 
         return save_path_for_pdf, path_to_new_directory
+
+    def extract_version_number(self, name):
+        """Extract the version number from the directory name."""
+        number_in_dir = [int(s) for s in re.findall(r"\d+", name)]
+
+        if len(number_in_dir) != 1:
+            raise ValueError("The directory name does not contain exactly one number.")
+
+        return number_in_dir[0]
+
+    def save_page_as_image(self, page_number, src, name):
+        """Save the cover page of the PDF file as a PNG image."""
+
+        page = src.load_page(page_number)
+        pix = page.get_pixmap()  # render page to an image
+        # This will lead to an error if the directory name changes
+        version_number = self.extract_version_number(name)
+        image_title = f"coverpage-version-{version_number}-page-{page_number}"
+        image_path = f"sample_data/{image_title}.png"
+
+        pix.save(
+            image_path,
+        )
+
+        image_id = upload_image(image_path, image_title)
+
+        return image_id[0]

@@ -7,6 +7,7 @@ import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
 from utils.parser import parse_image, parse_page
+from utils.requests import check_for_papers_category, create_papers_category
 from utils.utils import PluginUtility
 
 app = FastAPI()
@@ -36,6 +37,7 @@ def upload(file: UploadFile = File(...)):
     try:
         save_path_for_pdf, path_to_new_directory = plugin_utility.upload_file(file)
     except IOError as e:
+        traceback.print_exc()
         return {"message": f"There was an error uploading the file: {e}"}
     finally:
         file.file.close()
@@ -47,6 +49,19 @@ def upload(file: UploadFile = File(...)):
 
             src = fitz.open(save_path_for_pdf)
 
+            # extract version number from directory name
+            version_number = plugin_utility.extract_version_number(
+                path_to_new_directory
+            )
+
+            # check if the version number exists already as papers category
+            # if not, create it
+
+            papers_category_id = check_for_papers_category(version_number)
+            if not papers_category_id:
+                papers_category_id = create_papers_category(version_number)
+                print(f"papers_category_id: {papers_category_id}")
+
             categories = []
             meta_array = {
                 "category": 0,
@@ -55,25 +70,30 @@ def upload(file: UploadFile = File(...)):
                 "raw_text": "",
                 "headlines": [],
                 "starting_characters": [],
+                "category_papers": papers_category_id,  # ausgabennummer
             }
+            print(f"meta_array: {meta_array}")
 
             for index, page in enumerate(src):
 
                 # skip first page
                 if index == 0:
                     continue
-
+                if index > 15:
+                    break
+                print(f"parse page {index} of {len(src)} pages.")
                 # Identify category of page
                 try:
                     category = plugin_utility.identify_category(
                         page, index, path_to_new_directory
                     )
                     categories.append(category)
+
                 except IOError as e:
                     traceback.print_exc()
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
-
+                print("category", category)
                 number_of_images, image_id, image_text = parse_image(
                     page, src, index, path_to_new_directory
                 )
@@ -85,7 +105,7 @@ def upload(file: UploadFile = File(...)):
                 meta_array["category"] = category
                 meta_array["image_id"] = image_id
                 meta_array["image_text"] = image_text
-                print(f"Entering parse page once meta_array: {meta_array}")
+                print("Entering parse page once meta_array:")
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array
@@ -100,6 +120,7 @@ def upload(file: UploadFile = File(...)):
                     continue
 
                 # This is the case when the page has been uploaded
+                print("Reset meta_array")
                 meta_array = {
                     "category": 0,
                     "image_id": "",
@@ -108,6 +129,7 @@ def upload(file: UploadFile = File(...)):
                     "raw_text": "",
                     "headlines": [],
                     "starting_characters": [],
+                    "category_papers": papers_category_id,  # ausgabennummer
                 }
 
                 # DTodo: create post with type papers and the name of the issue # noqa: E501
