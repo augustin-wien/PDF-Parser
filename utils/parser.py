@@ -1,6 +1,7 @@
 """Parsing functions to extract images and text from PDF."""
 
 import traceback
+
 import fitz
 
 from utils import requests
@@ -31,7 +32,6 @@ def get_all_images(page, index, src, path_to_new_directory):
             pix = pix3  # use the new pixmap
             # check dimensions for gustl
             if abs_width > 2000 and abs_height > 1000:
-                print(abs_width, abs_height)
                 contains_gustl = True
 
         # Save the image to a file
@@ -57,6 +57,7 @@ def create_meta_information(category, headline=None):
         "title": headline_or_category,
         "author": "",
         "category": category,
+        "category_papers": 1,
     }
     return meta_information
 
@@ -173,6 +174,7 @@ def extract_headlines(
         try:
             for line in text["lines"]:
                 for span in line["spans"]:
+                    # DTODO: variables should have the same order
                     starting_characters, ending_symbols, headlines = process_span(
                         span,
                         starting_characters,
@@ -183,7 +185,6 @@ def extract_headlines(
 
         except KeyError:
             pass
-
     return headlines, starting_characters, ending_symbols
 
 
@@ -251,28 +252,39 @@ def parse_image(page, src, index, path_to_new_directory):
 
         image_text = ""
         if number_of_images == 0:
-            return number_of_images, 0, image_text, gustl_wp_id
+            return number_of_images, 0, image_text
+        # Exclude images that are not in the page rectangle
+        rx = page.rect
+        image_index = 0
+        image_id = None
+        image_src = None
+        for img_info in page.get_images(full=True):
+            img_rect = fitz.Rect(img_info[:4])
+            if rx.contains(img_rect):
+                image_filename = (
+                    f"{path_to_new_directory}page_{index}_img_{image_index}.png"
+                )
+                image_id, image_src = requests.upload_image(
+                    image_filename, f"page_{index}_img_{image_index}.png"
+                )
+                if number_of_images == 1:
+                    return number_of_images, image_id, image_text, gustl_wp_id
 
-        for image_index in range(number_of_images + 1):
-            image_filename = (
-                f"{path_to_new_directory}page_{index}_img_{image_index}.png"
-            )
-            image_id, image_src = requests.upload_image(
-                image_filename, f"page_{index}_img_{image_index}.png"
-            )
-            if number_of_images == 1:
-                return number_of_images, image_id, image_text, gustl_wp_id
-
-            if image_index == gustl_id:
-                gustl_wp_id = image_id
-                # Don't add gustl to image_text
-                continue
-
-            image_text += f"""
-                <!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
-                <figure class="wp-block-image size-full"><img src="{image_src}"
-                alt="" class="wp-image-{image_id}"/></figure><!-- /wp:image -->"""
-
+                if image_index == gustl_id:
+                    gustl_wp_id = image_id
+                    # Don't add gustl to image_text
+                    continue
+                # this shouldn't contain new lines because they are transforemd to <p> tags which are not block elements
+                image_text += (
+                    '<!-- wp:image {"id":'
+                    + str(image_id)
+                    + '} --><figure class="wp-block-image size-full"><img src="'
+                    + image_src
+                    + '"alt="" class="wp-image-'
+                    + str(image_id)
+                    + '"/></figure><!-- /wp:image -->'
+                )
+            image_index += 1
     except IOError as e:
         traceback.print_exc()
         error_message = f"Error extracting and uploading images: {e}"
@@ -315,6 +327,7 @@ def parse_page(page, meta_array):
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
         meta_information = create_meta_information(meta_array["category"], headline)
+        meta_information["category_papers"] = meta_array["category_papers"]
 
         # If article is not empty, set raw_text to article
         if article:
