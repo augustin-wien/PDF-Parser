@@ -1,6 +1,7 @@
 """Parsing functions to extract images and text from PDF."""
 
 import traceback
+import fitz
 
 from utils import requests
 
@@ -15,13 +16,21 @@ def get_all_images(page, index, src, path_to_new_directory):
 
     for img_index, image in enumerate(img_list):
         image_index = image[0]
-        base_image = src.extract_image(image_index)
-        image_bytes = base_image["image"]
+
+        pix = fitz.Pixmap(src, image_index)  # pixmap from the image xref
+        if pix.colorspace is None:  # no colorspace, i.e. a mask
+            abs_width = abs(pix.width)
+            abs_height = abs(pix.height)
+            pix2 = fitz.Pixmap(fitz.csGRAY, (0, 0, abs_width, abs_height), 0)
+            # create a black image
+            pix2.set_rect(pix.irect, [0])
+            # use the mask from pix to set the alpha channel of pix2
+            pix3 = fitz.Pixmap(pix2, pix)
+            pix = pix3  # use the new pixmap
 
         # Save the image to a file
         image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
-        with open(image_filename, "wb") as image_file:
-            image_file.write(image_bytes)
+        pix.save(image_filename)
 
         highest_index = img_index
 
@@ -39,6 +48,7 @@ def create_meta_information(category, headline=None):
         "title": headline_or_category,
         "author": "",
         "category": category,
+        "category_papers": 1,
     }
     return meta_information
 
@@ -155,6 +165,7 @@ def extract_headlines(
         try:
             for line in text["lines"]:
                 for span in line["spans"]:
+                    # DTODO: variables should have the same order
                     starting_characters, ending_symbols, headlines = process_span(
                         span,
                         starting_characters,
@@ -165,7 +176,6 @@ def extract_headlines(
 
         except KeyError:
             pass
-
     return headlines, starting_characters, ending_symbols
 
 
@@ -231,22 +241,33 @@ def parse_image(page, src, index, path_to_new_directory):
         image_text = ""
         if number_of_images == 0:
             return number_of_images, 0, image_text
-
-        for image_index in range(number_of_images + 1):
-            image_filename = (
-                f"{path_to_new_directory}page_{index}_img_{image_index}.png"
-            )
-            image_id, image_src = requests.upload_image(
-                image_filename, f"page_{index}_img_{image_index}.png"
-            )
-            if number_of_images == 1:
-                return number_of_images, image_id, image_text
-
-            image_text += f"""
-                <!-- wp:image "id":{image_id},"sizeSlug":"full","linkDestination":"none" -->
-                <figure class="wp-block-image size-full"><img src="{image_src}"
-                alt="" class="wp-image-{image_id}"/></figure><!-- /wp:image -->"""
-
+        # Exclude images that are not in the page rectangle
+        rx = page.rect
+        image_index = 0
+        image_id = None
+        image_src = None
+        for img_info in page.get_images(full=True):
+            img_rect = fitz.Rect(img_info[:4])
+            if rx.contains(img_rect):
+                image_filename = (
+                    f"{path_to_new_directory}page_{index}_img_{image_index}.png"
+                )
+                image_id, image_src = requests.upload_image(
+                    image_filename, f"page_{index}_img_{image_index}.png"
+                )
+                if number_of_images == 1:
+                    return number_of_images, image_id, image_text
+                # this shouldn't contain new lines because they are transforemd to <p> tags which are not block elements
+                image_text += (
+                    '<!-- wp:image {"id":'
+                    + str(image_id)
+                    + '} --><figure class="wp-block-image size-full"><img src="'
+                    + image_src
+                    + '"alt="" class="wp-image-'
+                    + str(image_id)
+                    + '"/></figure><!-- /wp:image -->'
+                )
+            image_index += 1
     except IOError as e:
         traceback.print_exc()
         error_message = f"Error extracting and uploading images: {e}"
@@ -289,6 +310,7 @@ def parse_page(page, meta_array):
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
         meta_information = create_meta_information(meta_array["category"], headline)
+        meta_information["category_papers"] = meta_array["category_papers"]
 
         # If article is not empty, set raw_text to article
         if article:
