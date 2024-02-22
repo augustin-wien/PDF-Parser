@@ -252,7 +252,7 @@ def parse_image(page, src, index, path_to_new_directory):
 
         image_text = ""
         if number_of_images == 0:
-            return number_of_images, 0, image_text
+            return number_of_images, 0, image_text, gustl_wp_id
         # Exclude images that are not in the page rectangle
         rx = page.rect
         image_index = 0
