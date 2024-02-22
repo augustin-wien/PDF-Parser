@@ -78,7 +78,9 @@ def create_post(page, image_id, category):
     # to create a readable text for the article
     readable_text = "".join(article_edit)
 
-    response = upload_post(meta_information, readable_text, image_id)
+    response = upload_post(
+        meta_information["category"], meta_information["title"], readable_text, image_id
+    )
 
     print("response", response.content)
 
