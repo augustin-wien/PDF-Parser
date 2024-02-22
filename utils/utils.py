@@ -238,3 +238,21 @@ class PluginUtility:
         number_in_dir = [int(s) for s in re.findall(r"\d+", name)]
 
         return number_in_dir[0]
+
+    def save_page_as_image(self, page_number, src, name):
+        """Save the cover page of the PDF file as a PNG image."""
+
+        page = src.load_page(page_number)
+        pix = page.get_pixmap()  # render page to an image
+        # This will lead to an error if the directory name changes
+        version_number = self.extract_version_number(name)
+        image_title = f"coverpage-version-{version_number}-page-{page_number}"
+        image_path = f"sample_data/{image_title}.png"
+
+        pix.save(
+            image_path,
+        )
+
+        image_id = upload_image(image_path, image_title)
+
+        return image_id[0]
