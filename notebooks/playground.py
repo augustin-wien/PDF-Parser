@@ -2,10 +2,14 @@
 
 import json
 import os
+import sys
 
 import requests
 from dotenv import load_dotenv
 from fastapi import HTTPException
+
+sys.path.append("/home/funny/Documents/Projects/Augustin-Parser/augustin-plugin/")
+
 from utils.requests import generate_auth_header
 
 load_dotenv()
