@@ -34,6 +34,9 @@ def upload(file: UploadFile = File(...)):
     # create instance of PluginUtility
     plugin_utility = PluginUtility()
 
+    # Run check for PDF
+    plugin_utility.pdf_check(file)
+
     try:
         save_path_for_pdf, path_to_new_directory = plugin_utility.upload_file(file)
     except IOError as e:

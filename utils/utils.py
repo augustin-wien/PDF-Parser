@@ -2,10 +2,11 @@
 
 import os
 import re
+import tempfile
 
 import fitz
 from dotenv import load_dotenv
-
+from fastapi import HTTPException
 from utils.requests import upload_image
 
 
@@ -283,3 +284,40 @@ class PluginUtility:
         image_id = upload_image(image_path, image_title)
 
         return image_id[0]
+
+    def pdf_check(self, file):
+        """Check if the file is a PDF."""
+        if file.content_type != "application/pdf":
+            raise HTTPException(
+                status_code=400,
+                detail="File is not a PDF!",
+            )
+
+        if not file.filename.endswith(".pdf"):
+            raise HTTPException(
+                status_code=400,
+                detail="Filename does not end as PDF!",
+            )
+
+        try:
+            # Save the uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                tmp.write(file.file.read())
+                # Set the file pointer to the beginning of the file to be able to read it again
+                file.file.seek(0)
+                tmp_path = tmp.name
+
+            # Check if the file size is greater than 0 (i.e., not empty)
+            if os.path.getsize(tmp_path) == 0:
+                raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+            # Open the file to check if it is a valid PDF via the fitz library
+            doc = fitz.open(tmp_path)
+            doc.close()
+
+            # Clean up the temporary file
+            os.unlink(tmp_path)
+        except HTTPException as e:
+            raise HTTPException(
+                status_code=400, detail="Uploaded file is not a valid PDF"
+            ) from e
