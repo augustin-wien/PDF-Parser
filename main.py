@@ -76,13 +76,14 @@ def upload(file: UploadFile = File(...)):
                 "category_papers": papers_category_id,  # ausgabennummer
             }
             print(f"meta_array: {meta_array}")
+            next_page_needed = False
 
             for index, page in enumerate(src):
 
                 # skip first page
                 if index == 0:
                     continue
-                if index > 15:
+                if index > 4:
                     break
                 print(f"parse page {index} of {len(src)} pages.")
                 # Identify category of page
@@ -97,6 +98,11 @@ def upload(file: UploadFile = File(...)):
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
                 print("category", category)
+                # Crop page if category is "editorial"
+                # if category == "editorial":
+                #     page = plugin_utility.crop_by_percentage_page(
+                #         40, page, src, index, path_to_new_directory
+                #     )
                 number_of_images, image_id, image_text = parse_image(
                     page, src, index, path_to_new_directory
                 )
@@ -105,16 +111,42 @@ def upload(file: UploadFile = File(...)):
                     # Get sample image_id from env file
                     image_id = os.environ.get("SAMPLE_IMAGE_ID")
 
-                meta_array["category"] = category
                 meta_array["image_id"] = image_id
                 meta_array["image_text"] = image_text
-                print("Entering parse page once meta_array:")
 
-                # Crop page if category is "editorial"
-                if category == "editorial":
-                    page = plugin_utility.crop_by_percentage_page(
-                        40, page, src, index, path_to_new_directory
+                print(
+                    f""" meta array category not equal 0: {meta_array['category'] != 0}
+                      and category: {category != meta_array['category']} and
+                      next_page_needed: {next_page_needed}"""
+                )
+                if (
+                    meta_array["category"] != 0
+                    and category != meta_array["category"]
+                    and next_page_needed
+                ):
+                    # This is the case when the category has changed
+                    print("Category changed, so upload data now.", meta_array)
+                    meta_array["upload_data_now"] = True
+                    raw_text, headlines, starting_characters, next_page_needed = (
+                        parse_page(page, meta_array)
                     )
+                    # Set meta array back to default
+                    meta_array["upload_data_now"] = False
+                    # This is the case when the page has been uploaded
+                    print("Reset meta_array")
+                    meta_array = {
+                        "category": 0,
+                        "image_id": "",
+                        "image_text": "",
+                        "index": 0,
+                        "raw_text": "",
+                        "headlines": [],
+                        "starting_characters": [],
+                        "category_papers": papers_category_id,  # ausgabennummer
+                    }
+
+                # Set new or same category in meta array
+                meta_array["category"] = category
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array

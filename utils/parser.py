@@ -1,8 +1,8 @@
 """Parsing functions to extract images and text from PDF."""
 
 import traceback
-import fitz
 
+import fitz
 from utils import requests
 
 
@@ -280,41 +280,58 @@ def parse_page(page, meta_array):
     """Parse a single page of a PDF file and upload it to the Wordpress backend."""
 
     # Extract raw text from page with exception handling
-    try:
-        if meta_array["raw_text"]:
-            print("Extracting raw text with meta_array")
-            raw_text, article, headlines, starting_characters = extract_text(
-                page,
-                meta_array["raw_text"],
-                meta_array["starting_characters"],
-                meta_array["headlines"],
-                True,
-            )
-        else:
-            raw_text, article, headlines, starting_characters = extract_text(page)
-    except IOError as e:
-        traceback.print_exc()
-        error_message = f"Error extracting raw text: {e}"
-        raise IOError(error_message) from e
+    print(f"Status of upload_data_now: {meta_array.get('upload_data_now')}")
+    if not meta_array.get("upload_data_now"):
+        try:
+            if meta_array["raw_text"]:
+                print("Entering extract_text with raw_text")
+                raw_text, article, headlines, starting_characters = extract_text(
+                    page,
+                    meta_array["raw_text"],
+                    meta_array["starting_characters"],
+                    meta_array["headlines"],
+                    True,
+                )
+            else:
+                print("Entering extract_text without raw_text")
+                raw_text, article, headlines, starting_characters = extract_text(page)
+        except IOError as e:
+            traceback.print_exc()
+            error_message = f"Error extracting raw text: {e}"
+            raise IOError(error_message) from e
 
-    # Extract text of several pages if story starts on one page and ends on another
-    # Set limit to maximum 10 pages if no ending symbol can be found
-    if not article and headlines and starting_characters:
-        return raw_text, headlines, starting_characters, True
+        # Extract text of several pages if story starts on one page and ends on another
+        # Set limit to maximum 10 pages if no ending symbol can be found
+        if not article and headlines and starting_characters:
+            return raw_text, headlines, starting_characters, True
 
-    # Since all headlines are given, join all headlines to one string
-    if headlines is None:
-        headlines = []
-    headline = " ".join(headlines)
-
+        # Prevent error if headlines is None
+        if headlines is None:
+            headlines = []
+        headline = " ".join(headlines)
+    else:
+        headline, article = "", ""
+        headlines = meta_array["headlines"]
+        starting_characters = meta_array["starting_characters"]
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
-        meta_information = create_meta_information(meta_array["category"], headline)
+
+        meta_information = create_meta_information(
+            meta_array["category"],
+            # Join headlines from variable or from meta_array depending on upload_data_now status
+            (
+                headline
+                if meta_array.get("upload_data_now")
+                else " ".join(meta_array["headlines"])
+            ),
+        )
         meta_information["category_papers"] = meta_array["category_papers"]
 
         # If article is not empty, set raw_text to article
-        if article:
+        if article and not meta_array.get("upload_data_now"):
             raw_text = article
+        else:
+            raw_text = meta_array["raw_text"]
 
         # Append image_text to raw_text
         raw_text += meta_array["image_text"]
