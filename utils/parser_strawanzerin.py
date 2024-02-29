@@ -26,7 +26,7 @@ class Strawanzerin:
         index = "strawanzerin"
 
         # Get image from PDF
-        number_of_images, image_id, image_text = parse_image(
+        number_of_images, image_id, image_text, _ = parse_image(
             page, src, index, path_to_new_directory
         )
 

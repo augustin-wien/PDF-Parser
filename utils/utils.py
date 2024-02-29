@@ -1,9 +1,12 @@
 """Common utility functions for the plugin."""
 
 import os
+import re
+import tempfile
 
 import fitz
 from dotenv import load_dotenv
+from fastapi import HTTPException
 from utils.requests import upload_image
 
 
@@ -231,3 +234,90 @@ class PluginUtility:
         path_to_new_directory = path_to_new_directory + "/"
 
         return save_path_for_pdf, path_to_new_directory
+
+    def crop_by_percentage_page(
+        self, percentage, original_page, src, page_number, path_to_new_directory
+    ):
+        """Crop the page by a percentage from the top."""
+        self.output_document = fitz.open()
+        # Get the dimensions of the original page
+        original_width = original_page.rect.width
+        original_height = original_page.rect.height
+
+        # Create a new page with half the height of the original page
+        new_page_height = original_height / (100 / percentage)
+        new_page = self.output_document.new_page(
+            -1, width=original_width, height=new_page_height
+        )
+
+        # Set the crop box for the new page to half of the original page
+        new_page.show_pdf_page(new_page.rect, src, page_number, clip=new_page.rect)
+        if self.debug:
+            pix = new_page.get_pixmap()  # render page to an image
+            name_png = f"{path_to_new_directory}page-{page_number}-crop-{percentage}.png"  # _{random.randint(1,100)}
+            pix.save(name_png)  # store image as a PNG
+        return new_page
+
+    def extract_version_number(self, name):
+        """Extract the version number from the directory name."""
+        number_in_dir = [int(s) for s in re.findall(r"\d+", name)]
+
+        if len(number_in_dir) != 1:
+            raise ValueError("The directory name does not contain exactly one number.")
+
+        return number_in_dir[0]
+
+    def save_page_as_image(self, page_number, src, name):
+        """Save the cover page of the PDF file as a PNG image."""
+
+        page = src.load_page(page_number)
+        pix = page.get_pixmap()  # render page to an image
+        # This will lead to an error if the directory name changes
+        version_number = self.extract_version_number(name)
+        image_title = f"coverpage-version-{version_number}-page-{page_number}"
+        image_path = f"sample_data/{image_title}.png"
+
+        pix.save(
+            image_path,
+        )
+
+        image_id = upload_image(image_path, image_title)
+
+        return image_id[0]
+
+    def pdf_check(self, file):
+        """Check if the file is a PDF."""
+        if file.content_type != "application/pdf":
+            raise HTTPException(
+                status_code=400,
+                detail="File is not a PDF!",
+            )
+
+        if not file.filename.endswith(".pdf"):
+            raise HTTPException(
+                status_code=400,
+                detail="Filename does not end as PDF!",
+            )
+
+        try:
+            # Save the uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                tmp.write(file.file.read())
+                # Set the file pointer to the beginning of the file to be able to read it again
+                file.file.seek(0)
+                tmp_path = tmp.name
+
+            # Check if the file size is greater than 0 (i.e., not empty)
+            if os.path.getsize(tmp_path) == 0:
+                raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+            # Open the file to check if it is a valid PDF via the fitz library
+            doc = fitz.open(tmp_path)
+            doc.close()
+
+            # Clean up the temporary file
+            os.unlink(tmp_path)
+        except HTTPException as e:
+            raise HTTPException(
+                status_code=400, detail="Uploaded file is not a valid PDF"
+            ) from e
