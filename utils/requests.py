@@ -112,7 +112,7 @@ def check_for_category(category):
     for cat in category_list:
         if category == "tun & lassen" and cat["name"].strip() == "tun &amp; lassen":
             return cat["id"]
-        if cat["name"].strip() == category.strip():
+        if cat["name"].strip() == str(category).strip():
             return cat["id"]
 
     # if category does not exist, return category "Uncategorized", which has always id 1
@@ -193,13 +193,8 @@ def upload_post(meta_information, readable_text, image_id):
     post = {
         "title": meta_information["title"],
         "status": "publish",
-        # WIP: Remove image_id once the image is uploaded to the media library
         "content": readable_text,
-        "excerpt": meta_information["author"]
-        + " "
-        + meta_information["photograph"]
-        + " "
-        + meta_information["protocol"],
+        "excerpt": "",
         "post_type": "articles",
         "featured_media": image_id,
         "categories": [category_number],

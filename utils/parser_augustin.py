@@ -1,9 +1,11 @@
-"""Parsing functions to extract images and text from PDF."""
+"""Parsing functions to extract images and text from augustin PDF file."""
 
+import os
 import traceback
 
 import fitz
 from utils import requests
+from utils.requests import check_for_papers_category, create_papers_category
 
 
 # Method to extract all images from a PDF page
@@ -21,6 +23,7 @@ def get_all_images(page, index, src, path_to_new_directory):
 
         pix = fitz.Pixmap(src, image_index)  # pixmap from the image xref
         if pix.colorspace is None:  # no colorspace, i.e. a mask
+            print("Warning: Image is a mask")
             abs_width = abs(pix.width)
             abs_height = abs(pix.height)
             pix2 = fitz.Pixmap(fitz.csGRAY, (0, 0, abs_width, abs_height), 0)
@@ -33,8 +36,12 @@ def get_all_images(page, index, src, path_to_new_directory):
             if abs_width > 2000 and abs_height > 1000:
                 contains_gustl = True
 
-        # Save the image to a file
-        image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
+        # Save the image to jpg or png depending on colorspace
+        if str(pix.colorspace).strip() == "Colorspace(CS_CMYK) - DeviceCMYK":
+            image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.jpg"
+        else:
+            image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
+        print(f"Saving image to {image_filename}, pix.colorspace: {pix.colorspace}")
         pix.save(image_filename)
 
         highest_index = img_index
@@ -380,3 +387,162 @@ def parse_page(page, meta_array):
         )
 
     return raw_text, headlines, starting_characters, False
+
+
+def process_augustin_file(save_path_for_pdf, path_to_new_directory, plugin_utility):
+    """Process the Augustin file."""
+
+    # split file in single pages
+    plugin_utility.save_pdf_a3_to_pdf_a4(save_path_for_pdf, path_to_new_directory)
+
+    src = fitz.open(save_path_for_pdf)
+
+    # extract version number from directory name
+    version_number = plugin_utility.extract_version_number(path_to_new_directory)
+
+    # check if the version number exists already as papers category
+    # if not, create it
+
+    papers_category_id = check_for_papers_category(version_number)
+    if not papers_category_id:
+        papers_category_id = create_papers_category(version_number)
+        print(f"papers_category_id: {papers_category_id}")
+
+    categories = []
+    meta_array = {
+        "category": 0,
+        "image_id": "",
+        "image_text": "",
+        "raw_text": "",
+        "headlines": [],
+        "starting_characters": [],
+        "first_page_image_id": "",
+        "category_papers": papers_category_id,  # ausgabennummer
+    }
+    print(f"meta_array: {meta_array}")
+    next_page_needed = False
+
+    for index, page in enumerate(src):
+
+        # skip first page
+        if index == 0:
+            meta_array["first_page_image_id"] = plugin_utility.save_page_as_image(
+                index, src, path_to_new_directory + "first_page.jpg"
+            )
+            continue
+        print(f"parse page {index} of {len(src)} pages.")
+        # Identify category of page
+        try:
+            category = plugin_utility.identify_category(
+                page, index, path_to_new_directory
+            )
+            categories.append(category)
+
+        except IOError as e:
+            traceback.print_exc()
+            error_message = f"Error identifying category: {e}"
+            raise IOError(error_message) from e
+        print("Main upload category", category)
+
+        # Commented out the following lines leading to an error parsing images
+
+        # Crop page if category is "editorial"
+        # if category == "editorial":
+        #     page = plugin_utility.crop_by_percentage_page(
+        #         40, page, src, index, path_to_new_directory
+        #     )
+
+        print(
+            f""" meta array category not equal 0: {meta_array['category'] != 0}
+                and category: {category != meta_array['category']} and
+                next_page_needed: {next_page_needed}"""
+        )
+        if (
+            meta_array["category"] != 0
+            and category != meta_array["category"]
+            and next_page_needed
+        ):
+            # This is the case when the category has changed
+            print("Category changed, so upload data now.", meta_array)
+            meta_array["upload_data_now"] = True
+            raw_text, headlines, starting_characters, next_page_needed = parse_page(
+                page, meta_array
+            )
+            # Set meta array back to default
+            meta_array["upload_data_now"] = False
+            # This is the case when the page has been uploaded
+            print("Reset meta_array")
+            meta_array = {
+                "category": 0,
+                "image_id": "",
+                "image_text": "",
+                "index": 0,
+                "raw_text": "",
+                "headlines": [],
+                "starting_characters": [],
+                "category_papers": papers_category_id,  # ausgabennummer
+            }
+
+        number_of_images, image_id, image_text, gustl_wp_id = parse_image(
+            page, src, index, path_to_new_directory
+        )
+        if gustl_wp_id is not None:
+            print(f"Uploading post with gustl_wp_id: {gustl_wp_id}")
+            meta = {
+                "protocol": "",
+                "photograph": "",
+                "title": "Gustl",
+                "author": "",
+                "category": category,
+                "category_papers": papers_category_id,
+            }
+            requests.upload_post(meta, "", gustl_wp_id)
+
+        if number_of_images == 0:
+            print(f"Main upload No image found on page {index}")
+            # Get sample image_id from env file
+            image_id = os.environ.get("SAMPLE_IMAGE_ID")
+
+        meta_array["image_id"] = image_id
+        meta_array["image_text"] = image_text
+        # Set new or same category in meta array
+        meta_array["category"] = category
+        print("Entering parse page once meta_array:")
+
+        # Editorial handling
+        if category == "editorial":
+            # Editorial should have the first page as thumbnail
+            meta_array["image_id"] = meta_array["first_page_image_id"]
+            # Crop page if category is "editorial"
+            page = plugin_utility.crop_by_percentage_page(
+                40, page, src, index, path_to_new_directory
+            )
+
+        raw_text, headlines, starting_characters, next_page_needed = parse_page(
+            page, meta_array
+        )
+        if next_page_needed:
+            print("Next page needed")
+            # This case occurs when the page has its end on the next pages
+            meta_array["raw_text"] = " ".join(meta_array["raw_text"]) + raw_text
+            meta_array["headlines"] += headlines
+            meta_array["starting_characters"] += starting_characters
+
+            continue
+
+        # This is the case when the page has been uploaded
+        print("Reset meta_array")
+        meta_array = {
+            "category": 0,
+            "image_id": "",
+            "image_text": "",
+            "index": 0,
+            "raw_text": "",
+            "headlines": [],
+            "starting_characters": [],
+            "category_papers": papers_category_id,  # ausgabennummer
+        }
+
+        # DTodo: set the cover as image for the main item in the augustin backend # noqa: E501
+        # DTodo: set the color code in the settings of the augustin backend # noqa: E501
+    src.close()
