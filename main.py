@@ -94,9 +94,20 @@ def upload(file: UploadFile = File(...)):
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
                 print("category", category)
+                # Crop page if category is "editorial"
                 number_of_images, image_id, image_text = parse_image(
                     page, src, index, path_to_new_directory
                 )
+                if category == "editorial":
+                    page = plugin_utility.crop_by_percentage_page(
+                        70, 40, page, src, index, path_to_new_directory
+                    )
+                else:
+                    page = plugin_utility.crop_by_percentage_page(
+                        70, 100, page, src, index, path_to_new_directory
+                    )
+                
+
 
                 if number_of_images == 0:
                     # Get sample image_id from env file
@@ -107,11 +118,7 @@ def upload(file: UploadFile = File(...)):
                 meta_array["image_text"] = image_text
                 print("Entering parse page once meta_array:")
 
-                # Crop page if category is "editorial"
-                if category == "editorial":
-                    page = plugin_utility.crop_by_percentage_page(
-                        40, page, src, index, path_to_new_directory
-                    )
+      
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array

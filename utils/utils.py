@@ -235,26 +235,35 @@ class PluginUtility:
         return save_path_for_pdf, path_to_new_directory
 
     def crop_by_percentage_page(
-        self, percentage, original_page, src, page_number, path_to_new_directory
+        self, offset, percentage, original_page, src, page_number, path_to_new_directory
     ):
         """Crop the page by a percentage from the top."""
         self.output_document = fitz.open()
         # Get the dimensions of the original page
         original_width = original_page.rect.width
         original_height = original_page.rect.height
-
+        if percentage == 0:
+            percentage = 1
         # Create a new page with half the height of the original page
         new_page_height = original_height / (100 / percentage)
         new_page = self.output_document.new_page(
             -1, width=original_width, height=new_page_height
         )
-
+        # Add the offset to the new page
+        new_page_rect_with_offset = fitz.Rect(
+            new_page.rect.x0,
+            new_page.rect.y0+ offset,
+            new_page.rect.x1,
+            new_page.rect.y1,
+        )
+        # print(f"new_page_rect_with_offset: {new_page_rect_with_offset}")
         # Set the crop box for the new page to half of the original page
-        new_page.show_pdf_page(new_page.rect, src, page_number, clip=new_page.rect)
+        new_page.show_pdf_page(new_page_rect_with_offset, src, page_number, clip=new_page_rect_with_offset)
         if self.debug:
             pix = new_page.get_pixmap()  # render page to an image
             name_png = f"{path_to_new_directory}page-{page_number}-crop-{percentage}.png"  # _{random.randint(1,100)}
             pix.save(name_png)  # store image as a PNG
+        new_page = self.delete_text_outside_rect(new_page, new_page_rect_with_offset)  
         return new_page
 
     def extract_version_number(self, name):
@@ -283,3 +292,27 @@ class PluginUtility:
         image_id = upload_image(image_path, image_title)
 
         return image_id[0]
+
+    def delete_text_outside_rect(self, page, rect):
+        # Get the text blocks on the page
+        text_blocks = page.get_text("dict")
+        # Iterate through text blocks
+        for b in text_blocks["blocks"]:
+            bbox = fitz.Rect(b["bbox"])  # Text block bounding box
+            # print(f"bbox: {bbox}, rect: {rect}, intersects: {page.rect.intersects(bbox)}, contains: {page.rect.contains(bbox)}")
+            
+            # self.save_text_rect_as_image(page, bbox, f"sample_data/page-{random.randint(1,100000)}text_block_outside_rect.png")
+            # print(f"bbox: {bbox}, rect: {rect}")
+            if not page.rect.intersects(bbox) or not page.rect.contains(bbox):
+
+                # If the text block is outside the specified rectangle, redact it
+                page.add_redact_annot(b)
+                page.apply_redactions()
+        return page
+
+    def save_text_rect_as_image(self, page, rect, image_path):
+        # Get the portion of the page covered by the rectangle
+        pix = page.get_pixmap(matrix=fitz.Matrix(1, 1), clip=rect)
+
+        # Save the pixmap as an image
+        pix.save(image_path)

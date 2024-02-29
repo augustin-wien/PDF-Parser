@@ -2,6 +2,7 @@
 
 import traceback
 import fitz
+import numpy as np
 
 from utils import requests
 
@@ -13,26 +14,34 @@ def get_all_images(page, index, src, path_to_new_directory):
     img_list = page.get_images(full=True)
 
     highest_index = 0
+    rx = page.rect
 
     for img_index, image in enumerate(img_list):
-        image_index = image[0]
+        img_rect = fitz.Rect(image[:4])
+        if rx.contains(img_rect):
+            image_index = image[0]
+            print(f"image_index: {image_index}")
+            # check if image exists
+            try:
+                pix = fitz.Pixmap(src, image_index)  # pixmap from the image xref
+                if pix.colorspace is None:  # no colorspace, i.e. a mask
+                    abs_width = abs(pix.width)
+                    abs_height = abs(pix.height)
+                    pix2 = fitz.Pixmap(fitz.csGRAY, (0, 0, abs_width, abs_height), 0)
+                    # create a black image
+                    pix2.set_rect(pix.irect, [0])
+                    # use the mask from pix to set the alpha channel of pix2
+                    pix3 = fitz.Pixmap(pix2, pix)
+                    pix = pix3  # use the new pixmap
 
-        pix = fitz.Pixmap(src, image_index)  # pixmap from the image xref
-        if pix.colorspace is None:  # no colorspace, i.e. a mask
-            abs_width = abs(pix.width)
-            abs_height = abs(pix.height)
-            pix2 = fitz.Pixmap(fitz.csGRAY, (0, 0, abs_width, abs_height), 0)
-            # create a black image
-            pix2.set_rect(pix.irect, [0])
-            # use the mask from pix to set the alpha channel of pix2
-            pix3 = fitz.Pixmap(pix2, pix)
-            pix = pix3  # use the new pixmap
+                # Save the image to a file
+                image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
+                pix.save(image_filename)
 
-        # Save the image to a file
-        image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
-        pix.save(image_filename)
-
-        highest_index = img_index
+                highest_index = img_index
+            except Exception as e:
+                print(f"Error extracting image: {e}")
+                continue
 
     return highest_index
 
@@ -146,7 +155,11 @@ def process_span(
         if headlines is None:
             headlines = []
         if not searching_for_end:
-            headlines.append(span["text"].strip())
+            # Exclude page header from headlines 
+            if span["bbox"][1] > 70:
+                # Exclude single characters from headlines
+                if len(span["text"]) > 1:
+                    headlines.append(span["text"].strip())
 
     return starting_characters, ending_symbols, headlines
 
@@ -160,11 +173,35 @@ def extract_headlines(
 
     if not text_instances:
         return headlines, starting_characters, ending_symbols
+    
+
 
     for text in text_instances:
+        # Exclude page header from headlines
+        if text["bbox"][1] < 70:
+            continue
         try:
+            previous_bbox = None
             for line in text["lines"]:
                 for span in line["spans"]:
+                    # Check if span should belongs to the previous span
+                    # calculate the distance between the current span and the previous span
+
+                    if previous_bbox is not None and headlines is not None:
+                        if span["size"] >12:
+
+                            distance = distance_between_rects(span["bbox"], previous_bbox)
+                            if distance < 200 and span["size"] >12 and span["text"] not in headlines[len(headlines) - 1]\
+                                and len(span["text"]) > 1\
+                                    and span["text"] not in headlines:
+                                headlines[len(headlines) - 1] +=span["text"]
+                                continue
+                            else :
+                                print("Distance: ", distance)
+                                print("Headline span: ", span["text"])
+                                print("Headlines: ", headlines)
+                                print("Previous bbox: ", previous_bbox)
+
                     # DTODO: variables should have the same order
                     starting_characters, ending_symbols, headlines = process_span(
                         span,
@@ -173,6 +210,7 @@ def extract_headlines(
                         headlines,
                         searching_for_end,
                     )
+                    previous_bbox = span["bbox"]
 
         except KeyError:
             pass
@@ -305,7 +343,23 @@ def parse_page(page, meta_array):
     # Since all headlines are given, join all headlines to one string
     if headlines is None:
         headlines = []
-    headline = " ".join(headlines)
+    headlines_filtered = []
+    for index, headline in enumerate(headlines):
+        if headline == " " or headline == "" or headline == "\n" or len(headline) < 2:
+            del headlines[index]
+        else :
+            headlines_filtered.append(headline)
+    headline = headlines_filtered[0]
+    
+    quote = None
+    if len(headlines_filtered) > 1:
+        headlines_filtered = headlines_filtered[1:]
+        headline_string = " ".join(map(str,headlines_filtered))
+        quote = '<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>'\
+        + str(headline_string)\
+        + '</p><!-- /wp:paragraph --></blockquote><!-- /wp:quote -->'
+
+
 
     # Try posting raw text and category to Wordpress backend with exception handling
     try:
@@ -314,7 +368,12 @@ def parse_page(page, meta_array):
 
         # If article is not empty, set raw_text to article
         if article:
-            raw_text = article
+            raw_text = '<!-- wp:paragraph --><p>'+article+'</p><!-- /wp:paragraph -->'
+        else:
+            raw_text = '<!-- wp:paragraph --><p>'+raw_text+'</p><!-- /wp:paragraph -->'
+
+        if quote is not None:
+            raw_text = quote + raw_text
 
         # Append image_text to raw_text
         raw_text += meta_array["image_text"]
@@ -336,3 +395,21 @@ def parse_page(page, meta_array):
         )
 
     return raw_text, headlines, starting_characters, False
+
+def distance_between_rects(rect1, rect2):
+    # Calculate the distance between the left edge of rect1 and the right edge of rect2
+    left_to_right = rect2[0] - rect1[2] if rect1[2] < rect2[0] else rect1[0] - rect2[2]
+
+    # Calculate the distance between the right edge of rect1 and the left edge of rect2
+    right_to_left = rect2[0] - rect1[2] if rect1[2] > rect2[0] else rect1[0] - rect2[2]
+
+    # Calculate the distance between the top edge of rect1 and the bottom edge of rect2
+    top_to_bottom = rect2[1] - rect1[3] if rect1[3] < rect2[1] else rect1[1] - rect2[3]
+
+    # Calculate the distance between the bottom edge of rect1 and the top edge of rect2
+    bottom_to_top = rect2[1] - rect1[3] if rect1[3] > rect2[1] else rect1[1] - rect2[3]
+
+    # Find the minimum distance
+    min_distance = min(left_to_right, right_to_left, top_to_bottom, bottom_to_top)
+
+    return abs(min_distance)
