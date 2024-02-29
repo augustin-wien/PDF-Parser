@@ -5,6 +5,8 @@ import os
 import fitz
 from utils import requests
 from utils.parser_augustin import parse_image
+from utils.requests import check_for_papers_category, create_papers_category
+from utils.utils import PluginUtility
 
 
 class Strawanzerin:
@@ -278,9 +280,29 @@ class Strawanzerin:
         text += self.parse_following_pages(save_path_for_pdf)
         text += image_text
 
+        plugin_utility = PluginUtility()
+
+        # extract version number from directory name
+        version_number = plugin_utility.extract_version_number(path_to_new_directory)
+
+        # check if the version number exists already as papers category
+        # if not, create it
+
+        papers_category_id = check_for_papers_category(version_number)
+        if not papers_category_id:
+            papers_category_id = create_papers_category(version_number)
+            print(f"papers_category_id: {papers_category_id}")
+
         meta_array = {
-            "title": "Strawanzerin",
             "category": "Strawanzerin",
+            "image_id": "",
+            "image_text": "",
+            "title": "Strawanzerin",
+            "index": 0,
+            "raw_text": "",
+            "headlines": [],
+            "starting_characters": [],
+            "category_papers": papers_category_id,  # ausgabennummer
         }
 
         # Post raw text and category to Wordpress backend with exception handling in function
