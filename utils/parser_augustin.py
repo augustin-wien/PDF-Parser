@@ -358,9 +358,9 @@ def parse_page(page, meta_array):
 
         # If article is not empty, set raw_text to article
         if article and not meta_array.get("upload_data_now"):
-            raw_text = article
+            raw_text = '<!-- wp:paragraph --><p>' + article + '</p><!-- /wp:paragraph -->'
         else:
-            raw_text = meta_array["raw_text"]
+            raw_text = '<!-- wp:paragraph --><p>' + meta_array["raw_text"] + '</p><!-- /wp:paragraph -->'
 
         response = None
         # Append image_text to raw_text
@@ -427,7 +427,7 @@ def process_augustin_file(save_path_for_pdf, path_to_new_directory, plugin_utili
         # skip first page
         if index == 0:
             meta_array["first_page_image_id"] = plugin_utility.save_page_as_image(
-                index, src, path_to_new_directory + "first_page.jpg"
+                index, src, path_to_new_directory
             )
             continue
         print(f"parse page {index} of {len(src)} pages.")
