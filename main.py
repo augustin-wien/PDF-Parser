@@ -6,6 +6,7 @@ import traceback
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
+from utils import requests
 from utils.parser import parse_image, parse_page
 from utils.requests import check_for_papers_category, create_papers_category
 from utils.utils import PluginUtility
@@ -73,6 +74,7 @@ def upload(file: UploadFile = File(...)):
                 "raw_text": "",
                 "headlines": [],
                 "starting_characters": [],
+                "first_page_image_id": "",
                 "category_papers": papers_category_id,  # ausgabennummer
             }
             print(f"meta_array: {meta_array}")
@@ -82,6 +84,11 @@ def upload(file: UploadFile = File(...)):
 
                 # skip first page
                 if index == 0:
+                    meta_array["first_page_image_id"] = (
+                        plugin_utility.save_page_as_image(
+                            index, src, path_to_new_directory + "first_page.jpg"
+                        )
+                    )
                     continue
                 print(f"parse page {index} of {len(src)} pages.")
                 # Identify category of page
@@ -135,9 +142,21 @@ def upload(file: UploadFile = File(...)):
                         "starting_characters": [],
                         "category_papers": papers_category_id,  # ausgabennummer
                     }
-                number_of_images, image_id, image_text = parse_image(
+
+                number_of_images, image_id, image_text, gustl_wp_id = parse_image(
                     page, src, index, path_to_new_directory
                 )
+                if gustl_wp_id is not None:
+                    print(f"Uploading post with gustl_wp_id: {gustl_wp_id}")
+                    meta = {
+                        "protocol": "",
+                        "photograph": "",
+                        "title": "Gustl",
+                        "author": "",
+                        "category": category,
+                        "category_papers": papers_category_id,
+                    }
+                    requests.upload_post(meta, "", gustl_wp_id)
 
                 if number_of_images == 0:
                     print(f"Main upload No image found on page {index}")
@@ -148,6 +167,16 @@ def upload(file: UploadFile = File(...)):
                 meta_array["image_text"] = image_text
                 # Set new or same category in meta array
                 meta_array["category"] = category
+                print("Entering parse page once meta_array:")
+
+                # Editorial handling
+                if category == "editorial":
+                    # Editorial should have the first page as thumbnail
+                    meta_array["image_id"] = meta_array["first_page_image_id"]
+                    # Crop page if category is "editorial"
+                    page = plugin_utility.crop_by_percentage_page(
+                        40, page, src, index, path_to_new_directory
+                    )
 
                 raw_text, headlines, starting_characters, next_page_needed = parse_page(
                     page, meta_array

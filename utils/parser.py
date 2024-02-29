@@ -13,9 +13,11 @@ def get_all_images(page, index, src, path_to_new_directory):
     img_list = page.get_images(full=True)
 
     highest_index = 0
+    gustl_id = None
 
     for img_index, image in enumerate(img_list):
         image_index = image[0]
+        contains_gustl = False
 
         pix = fitz.Pixmap(src, image_index)  # pixmap from the image xref
         if pix.colorspace is None:  # no colorspace, i.e. a mask
@@ -27,15 +29,21 @@ def get_all_images(page, index, src, path_to_new_directory):
             # use the mask from pix to set the alpha channel of pix2
             pix3 = fitz.Pixmap(pix2, pix)
             pix = pix3  # use the new pixmap
+            # check dimensions for gustl
+            if abs_width > 2000 and abs_height > 1000:
+                contains_gustl = True
 
         # Save the image to a file
         image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.png"
         pix.save(image_filename)
 
         highest_index = img_index
+        if contains_gustl:
+            print(f"Found Gustl on page {index} with image index {img_index}")
+            gustl_id = img_index
 
     # Increment highest index by 1 to get the number of images
-    return highest_index + 1
+    return highest_index + 1, gustl_id
 
 
 # Function creates meta information for the post
@@ -237,11 +245,16 @@ def parse_image(page, src, index, path_to_new_directory):
     image_text where each image is embedded in case of more than one image.
     """
     try:
-        number_of_images = get_all_images(page, index, src, path_to_new_directory)
+        number_of_images, gustl_id = get_all_images(
+            page, index, src, path_to_new_directory
+        )
+        print(f"Gustl id is {gustl_id}")
+
+        gustl_wp_id = None
 
         image_text = ""
         if number_of_images == 0:
-            return number_of_images, 0, image_text
+            return number_of_images, 0, image_text, gustl_wp_id
         # Exclude images that are not in the page rectangle
         rx = page.rect
         image_index = 0
@@ -249,7 +262,7 @@ def parse_image(page, src, index, path_to_new_directory):
         image_src = None
         for img_info in page.get_images(full=True):
             img_rect = fitz.Rect(img_info[:4])
-            if rx.contains(img_rect):
+            if rx.contains(img_rect) or image_index == gustl_id:
                 image_filename = (
                     f"{path_to_new_directory}page_{index}_img_{image_index}.png"
                 )
@@ -257,7 +270,15 @@ def parse_image(page, src, index, path_to_new_directory):
                     image_filename, f"page_{index}_img_{image_index}.png"
                 )
                 if number_of_images == 1:
-                    return number_of_images, image_id, image_text
+                    return number_of_images, image_id, image_text, gustl_wp_id
+                print(
+                    f"Adding image {image_index} to image_text and gustl id is {gustl_id}"
+                )
+                if image_index == gustl_id:
+                    print(f"Setting gustl_wp_id to {image_id}")
+                    gustl_wp_id = image_id
+                    # Don't add gustl to image_text
+                    continue
                 # this shouldn't contain new lines because they are transforemd to <p> tags which are not block elements
                 image_text += (
                     '<!-- wp:image {"id":'
@@ -274,7 +295,7 @@ def parse_image(page, src, index, path_to_new_directory):
         error_message = f"Error extracting and uploading images: {e}"
         raise IOError(error_message) from e
 
-    return number_of_images, image_id, image_text
+    return number_of_images, image_id, image_text, gustl_wp_id
 
 
 def parse_page(page, meta_array):
@@ -334,13 +355,18 @@ def parse_page(page, meta_array):
         else:
             raw_text = meta_array["raw_text"]
 
+        response = None
         # Append image_text to raw_text
         raw_text += meta_array["image_text"]
-
-        # Post to Wordpress
-        response = requests.upload_post(
-            meta_information, raw_text, meta_array["image_id"]
-        )
+        if meta_array["category"] == "editorial":
+            response = requests.upload_paper(
+                meta_information, raw_text, meta_array["image_id"]
+            )
+        else:
+            # Post Article to Wordpress
+            response = requests.upload_post(
+                meta_information, raw_text, meta_array["image_id"]
+            )
     except IOError as e:
         traceback.print_exc()
         error_message = (
