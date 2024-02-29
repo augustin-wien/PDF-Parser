@@ -146,9 +146,6 @@ def check_for_papers_category(category):
             + str(response.status_code)
             + str(response.content),
         )
-    print(
-        f"Response: {response} and status code: {response.status_code} and content {response.content}"
-    )
 
     category_list = json.loads(response.content)
 
