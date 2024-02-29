@@ -6,6 +6,8 @@ import traceback
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
+
+from utils import requests
 from utils.parser import parse_image, parse_page
 from utils.requests import check_for_papers_category, create_papers_category
 from utils.utils import PluginUtility
@@ -99,10 +101,21 @@ def upload(file: UploadFile = File(...)):
                     traceback.print_exc()
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
-                print("category", category)
-                number_of_images, image_id, image_text = parse_image(
+
+                number_of_images, image_id, image_text, gustl_wp_id = parse_image(
                     page, src, index, path_to_new_directory
                 )
+                if gustl_wp_id is not None:
+                    print(f"Uploading post with gustl_wp_id: {gustl_wp_id}")
+                    meta = {
+                        "protocol": "",
+                        "photograph": "",
+                        "title": "Gustl",
+                        "author": "",
+                        "category": category,
+                        "category_papers": papers_category_id,
+                    }
+                    requests.upload_post(meta, "", gustl_wp_id)
 
                 if number_of_images == 0:
                     # Get sample image_id from env file
