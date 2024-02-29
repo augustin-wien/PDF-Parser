@@ -36,10 +36,7 @@ def get_all_images(page, index, src, path_to_new_directory):
             if abs_width > 2000 and abs_height > 1000:
                 contains_gustl = True
 
-        # Save the image to a file
-        print(
-            f"pix.colorspace equals {pix.colorspace} 'Colorspace(CS_CMYK) - DeviceCMYK' {str(pix.colorspace).strip() == 'Colorspace(CS_CMYK) - DeviceCMYK'}"
-        )
+        # Save the image to jpg or png depending on colorspace
         if str(pix.colorspace).strip() == "Colorspace(CS_CMYK) - DeviceCMYK":
             image_filename = f"{path_to_new_directory}page_{index}_img_{img_index}.jpg"
         else:
