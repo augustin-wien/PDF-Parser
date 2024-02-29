@@ -6,7 +6,6 @@ import traceback
 import fitz
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse
-
 from utils import requests
 from utils.parser import parse_image, parse_page
 from utils.requests import check_for_papers_category, create_papers_category
@@ -35,6 +34,9 @@ def upload(file: UploadFile = File(...)):
 
     # create instance of PluginUtility
     plugin_utility = PluginUtility()
+
+    # Run check for PDF
+    plugin_utility.pdf_check(file)
 
     try:
         save_path_for_pdf, path_to_new_directory = plugin_utility.upload_file(file)
@@ -76,6 +78,7 @@ def upload(file: UploadFile = File(...)):
                 "category_papers": papers_category_id,  # ausgabennummer
             }
             print(f"meta_array: {meta_array}")
+            next_page_needed = False
 
             for index, page in enumerate(src):
 
@@ -87,8 +90,6 @@ def upload(file: UploadFile = File(...)):
                         )
                     )
                     continue
-                if index > 15:
-                    break
                 print(f"parse page {index} of {len(src)} pages.")
                 # Identify category of page
                 try:
@@ -101,6 +102,46 @@ def upload(file: UploadFile = File(...)):
                     traceback.print_exc()
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
+                print("Main upload category", category)
+
+                # Commented out the following lines leading to an error parsing images
+
+                # Crop page if category is "editorial"
+                # if category == "editorial":
+                #     page = plugin_utility.crop_by_percentage_page(
+                #         40, page, src, index, path_to_new_directory
+                #     )
+
+                print(
+                    f""" meta array category not equal 0: {meta_array['category'] != 0}
+                      and category: {category != meta_array['category']} and
+                      next_page_needed: {next_page_needed}"""
+                )
+                if (
+                    meta_array["category"] != 0
+                    and category != meta_array["category"]
+                    and next_page_needed
+                ):
+                    # This is the case when the category has changed
+                    print("Category changed, so upload data now.", meta_array)
+                    meta_array["upload_data_now"] = True
+                    raw_text, headlines, starting_characters, next_page_needed = (
+                        parse_page(page, meta_array)
+                    )
+                    # Set meta array back to default
+                    meta_array["upload_data_now"] = False
+                    # This is the case when the page has been uploaded
+                    print("Reset meta_array")
+                    meta_array = {
+                        "category": 0,
+                        "image_id": "",
+                        "image_text": "",
+                        "index": 0,
+                        "raw_text": "",
+                        "headlines": [],
+                        "starting_characters": [],
+                        "category_papers": papers_category_id,  # ausgabennummer
+                    }
 
                 number_of_images, image_id, image_text, gustl_wp_id = parse_image(
                     page, src, index, path_to_new_directory
@@ -118,12 +159,14 @@ def upload(file: UploadFile = File(...)):
                     requests.upload_post(meta, "", gustl_wp_id)
 
                 if number_of_images == 0:
+                    print(f"Main upload No image found on page {index}")
                     # Get sample image_id from env file
                     image_id = os.environ.get("SAMPLE_IMAGE_ID")
 
-                meta_array["category"] = category
                 meta_array["image_id"] = image_id
                 meta_array["image_text"] = image_text
+                # Set new or same category in meta array
+                meta_array["category"] = category
                 print("Entering parse page once meta_array:")
 
                 # Editorial handling

@@ -222,7 +222,7 @@ def upload_post(meta_information, readable_text, image_id):
 
 def upload_paper(meta_information, readable_text, image_id):
     """Upload the post via the Wordpress API."""
-    print("upload post")
+    print("upload paper")
     url = global_url + "papers"
 
     header = generate_auth_header()
