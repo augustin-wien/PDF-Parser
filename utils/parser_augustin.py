@@ -358,9 +358,15 @@ def parse_page(page, meta_array):
 
         # If article is not empty, set raw_text to article
         if article and not meta_array.get("upload_data_now"):
-            raw_text = '<!-- wp:paragraph --><p>' + article + '</p><!-- /wp:paragraph -->'
+            raw_text = (
+                "<!-- wp:paragraph --><p>" + article + "</p><!-- /wp:paragraph -->"
+            )
         else:
-            raw_text = '<!-- wp:paragraph --><p>' + meta_array["raw_text"] + '</p><!-- /wp:paragraph -->'
+            raw_text = (
+                "<!-- wp:paragraph --><p>"
+                + meta_array["raw_text"]
+                + "</p><!-- /wp:paragraph -->"
+            )
 
         response = None
         # Append image_text to raw_text
