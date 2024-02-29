@@ -315,14 +315,18 @@ def parse_page(page, meta_array):
         # If article is not empty, set raw_text to article
         if article:
             raw_text = article
-
+        response = None
         # Append image_text to raw_text
         raw_text += meta_array["image_text"]
-
-        # Post to Wordpress
-        response = requests.upload_post(
-            meta_information, raw_text, meta_array["image_id"]
-        )
+        if meta_array["category"] == "editorial":
+            response = requests.upload_paper(
+                meta_information, raw_text, meta_array["image_id"]
+            )
+        else:
+            # Post Article to Wordpress
+            response = requests.upload_post(
+                meta_information, raw_text, meta_array["image_id"]
+            )
     except IOError as e:
         traceback.print_exc()
         error_message = (
