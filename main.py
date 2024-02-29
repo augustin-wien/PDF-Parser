@@ -86,7 +86,7 @@ def upload(file: UploadFile = File(...)):
                 if index == 0:
                     meta_array["first_page_image_id"] = (
                         plugin_utility.save_page_as_image(
-                            index, src, path_to_new_directory + "first_page.jpg"
+                            index, src, path_to_new_directory
                         )
                     )
                     continue

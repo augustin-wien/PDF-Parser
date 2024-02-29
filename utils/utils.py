@@ -267,15 +267,15 @@ class PluginUtility:
 
         return number_in_dir[0]
 
-    def save_page_as_image(self, page_number, src, name):
+    def save_page_as_image(self, page_number, src, path):
         """Save the cover page of the PDF file as a PNG image."""
 
         page = src.load_page(page_number)
         pix = page.get_pixmap()  # render page to an image
         # This will lead to an error if the directory name changes
-        version_number = self.extract_version_number(name)
+        version_number = self.extract_version_number(path)
         image_title = f"coverpage-version-{version_number}-page-{page_number}"
-        image_path = f"sample_data/{image_title}.png"
+        image_path = f"{path}/{image_title}.png"
 
         pix.save(
             image_path,
