@@ -70,6 +70,7 @@ def upload(file: UploadFile = File(...)):
                 "raw_text": "",
                 "headlines": [],
                 "starting_characters": [],
+                "first_page_image_id": "",
                 "category_papers": papers_category_id,  # ausgabennummer
             }
             print(f"meta_array: {meta_array}")
@@ -78,6 +79,8 @@ def upload(file: UploadFile = File(...)):
 
                 # skip first page
                 if index == 0:
+                    meta_array["first_page_image_id"] = \
+                    plugin_utility.save_page_as_image(index,src, path_to_new_directory+"first_page.jpg")
                     continue
                 if index > 15:
                     break
@@ -107,8 +110,11 @@ def upload(file: UploadFile = File(...)):
                 meta_array["image_text"] = image_text
                 print("Entering parse page once meta_array:")
 
-                # Crop page if category is "editorial"
+                # Editorial handling
                 if category == "editorial":
+                    # Editorial should have the first page as thumbnail
+                    meta_array["image_id"] = meta_array["first_page_image_id"]
+                    # Crop page if category is "editorial"
                     page = plugin_utility.crop_by_percentage_page(
                         40, page, src, index, path_to_new_directory
                     )
