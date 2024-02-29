@@ -83,8 +83,6 @@ def upload(file: UploadFile = File(...)):
                 # skip first page
                 if index == 0:
                     continue
-                if index > 4:
-                    break
                 print(f"parse page {index} of {len(src)} pages.")
                 # Identify category of page
                 try:
@@ -97,22 +95,15 @@ def upload(file: UploadFile = File(...)):
                     traceback.print_exc()
                     error_message = f"Error identifying category: {e}"
                     raise IOError(error_message) from e
-                print("category", category)
+                print("Main upload category", category)
+
+                # Commented out the following lines leading to an error parsing images
+
                 # Crop page if category is "editorial"
                 # if category == "editorial":
                 #     page = plugin_utility.crop_by_percentage_page(
                 #         40, page, src, index, path_to_new_directory
                 #     )
-                number_of_images, image_id, image_text = parse_image(
-                    page, src, index, path_to_new_directory
-                )
-
-                if number_of_images == 0:
-                    # Get sample image_id from env file
-                    image_id = os.environ.get("SAMPLE_IMAGE_ID")
-
-                meta_array["image_id"] = image_id
-                meta_array["image_text"] = image_text
 
                 print(
                     f""" meta array category not equal 0: {meta_array['category'] != 0}
@@ -144,7 +135,17 @@ def upload(file: UploadFile = File(...)):
                         "starting_characters": [],
                         "category_papers": papers_category_id,  # ausgabennummer
                     }
+                number_of_images, image_id, image_text = parse_image(
+                    page, src, index, path_to_new_directory
+                )
 
+                if number_of_images == 0:
+                    print(f"Main upload No image found on page {index}")
+                    # Get sample image_id from env file
+                    image_id = os.environ.get("SAMPLE_IMAGE_ID")
+
+                meta_array["image_id"] = image_id
+                meta_array["image_text"] = image_text
                 # Set new or same category in meta array
                 meta_array["category"] = category
 

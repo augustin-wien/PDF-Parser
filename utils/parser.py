@@ -34,7 +34,8 @@ def get_all_images(page, index, src, path_to_new_directory):
 
         highest_index = img_index
 
-    return highest_index
+    # Increment highest index by 1 to get the number of images
+    return highest_index + 1
 
 
 # Function creates meta information for the post
@@ -321,7 +322,7 @@ def parse_page(page, meta_array):
             # Join headlines from variable or from meta_array depending on upload_data_now status
             (
                 headline
-                if meta_array.get("upload_data_now")
+                if not meta_array.get("upload_data_now")
                 else " ".join(meta_array["headlines"])
             ),
         )
